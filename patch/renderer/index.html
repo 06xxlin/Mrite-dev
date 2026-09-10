@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full overflow-hidden">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title></title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles/collab.css">
+  <!-- KaTeX 数学公式渲染（本地化） -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/auto-render.min.js"></script>
+  <!-- CodeMirror / AntV X6 懒加载，由 shared/dom.js 按需注入 -->
+</head>
+<body class="h-full overflow-hidden font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Helvetica_Neue',sans-serif] text-[13px] text-zinc-700 antialiased select-none bg-white">
+<div id="splashScreen" class="splash"><span class="splash-brand" id="splashBrand">Mrite</span><span class="splash-tag" id="splashTag">全网最先进的智能体</span></div>
+
+<div id="app" class="app-layout">
+
+  <!-- 自定义标题栏（拖拽区域） -->
+  <div class="app-titlebar">
+  </div>
+
+  <!-- 左侧导航栏 -->
+  <nav class="app-nav">
+    <span class="app-nav-brand">Mrite</span>
+    <button class="app-nav-btn active" id="btnHome" onclick="Mrite._navTo(this)" title="主页">
+      <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg></span>
+      <span class="app-nav-label">主页</span>
+    </button>
+    <div class="app-nav-middle">
+      <button class="app-nav-btn" id="btnTask" onclick="Mrite._navTo(this)" title="任务">
+        <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m10 8 5 4-5 4V8z" fill="currentColor" stroke="none"/></svg></span>
+        <span class="app-nav-label">任务</span>
+      </button>
+      <button class="app-nav-btn" id="btnWrite" onclick="Mrite._navTo(this)" title="工坊">
+        <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>
+        <span class="app-nav-label">工坊</span>
+      </button>
+      <button class="app-nav-btn" id="btnView" onclick="Mrite._navTo(this)" title="文件">
+        <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h3.2l2 2.5h5.8A2.5 2.5 0 0 1 20 9v8.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-11z"/><path d="M4 9h16"/></svg></span>
+        <span class="app-nav-label">文件</span>
+      </button>
+      <button class="app-nav-btn" id="btnExt" onclick="Mrite._navTo(this)" title="扩展">
+        <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg></span>
+        <span class="app-nav-label">扩展</span>
+      </button>
+    </div>
+    <div class="app-nav-bottom">
+      <button class="app-nav-btn" id="btnSettings" onclick="Mrite._navTo(this)" title="设置">
+        <span class="app-nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9.67 3.54a2.3 2.3 0 0 1 4.66 0l.18 1.16a2.3 2.3 0 0 0 3.1 1.79l1.08-.44a2.3 2.3 0 0 1 2.33 4.04l-.91.72a2.3 2.3 0 0 0 0 3.58l.91.72a2.3 2.3 0 0 1-2.33 4.04l-1.08-.44a2.3 2.3 0 0 0-3.1 1.79l-.18 1.16a2.3 2.3 0 0 1-4.66 0l-.18-1.16a2.3 2.3 0 0 0-3.1-1.79l-1.08.44a2.3 2.3 0 0 1-2.33-4.04l.91-.72a2.3 2.3 0 0 0 0-3.58l-.91-.72a2.3 2.3 0 0 1 2.33-4.04l1.08.44a2.3 2.3 0 0 0 3.1-1.79l.18-1.16Z"/><circle cx="12" cy="12" r="3.2"/></svg></span>
+        <span class="app-nav-label">设置</span>
+      </button>
+    </div>
+  </nav>
+
+  <main id="panelArea" class="app-main">
+    <!-- ★ 面板 HTML 由 index.js 的 _loadPanelsHTML() 启动时从 ui/ 目录注入 -->
+  </main>
+
+  <!-- ★ 插件详情弹窗（全局） -->
+  <div id="extModal" class="ext-modal-overlay" style="display:none" onclick="if(event.target===this)Mrite._extModalClose()">
+    <div class="ext-modal-box">
+      <button class="ext-modal-close" onclick="Mrite._extModalClose()">✕</button>
+      <div class="ext-modal-icon" id="extModalIcon"></div>
+      <div class="ext-modal-name" id="extModalName"></div>
+      <div class="ext-modal-desc" id="extModalDesc"></div>
+      <div class="ext-modal-meta" id="extModalMeta"></div>
+      <div class="ext-modal-actions" id="extModalActions"></div>
+    </div>
+  </div>
+
+  <!-- ★ 插件安装进度弹窗（导入插件包时的分步进度小窗口；失败时可点 × 或遮罩关闭） -->
+  <div id="extInstallModal" class="ext-modal-overlay" style="display:none" onclick="if(event.target===this)Mrite._extInstallHide()">
+    <div class="ext-install-box">
+      <button class="ext-install-close" id="extInstallClose" style="display:none" onclick="Mrite._extInstallHide()" title="关闭">✕</button>
+      <div class="ext-install-icon" id="extInstallIcon"></div>
+      <div class="ext-install-name" id="extInstallName">正在安装插件…</div>
+      <div class="ext-install-track"><div class="ext-install-bar" id="extInstallBar"></div></div>
+      <div class="ext-install-text" id="extInstallText">准备安装…</div>
+    </div>
+  </div>
+
+</div>
+
+<script src="shared/dom.js"></script>
+<script src="shared/format.js"></script>
+<script src="shared/icons.js"></script>
+<script src="shared/file-icons.js"></script>
+<script src="shared/avatar-presets.js"></script>
+<script src="shared/dialog.js"></script>
+  <script src="shared/run-detect.js"></script>
+<script src="license-timer.js"></script>
+<script src="state.js"></script>
+<script src="storage.js"></script>
+<script src="agent-events.js"></script>
+<script src="toolbar.js"></script>
+<!-- ★ 开发版解锁：必须排在 toolbar.js（定义 _isActivated）之后、panels/ui 之前 -->
+<script src="dev-unlock.js"></script>
+<!-- ★ v2.6：write 宿主模块静态加载（不走扩展注入流程，直接内置就绪，无加载 Toast）
+     write 形式上是扩展（extensions/builtin/write/manifest.json host:true），但实际不参与扩展加载机制 -->
+<script src="../extensions/builtin/write/main.js"></script>
+<script src="panels/upload.js"></script>
+<script src="panels/progress.js"></script>
+<script src="panels/view.js"></script>
+<script src="panels/settings.js"></script>
+<script src="panels/modify.js"></script>
+<!-- neeter Agent 工作台桥：需在 modify.js 之后、index.js 之前 -->
+<script src="neeter-host.js"></script>
+<script src="panels/dashboard.js"></script>
+<script src="announce-popup.js"></script>
+<script src="panels/collab.js"></script>
+<script src="ui.js"></script>
+<script src="index.js"></script>
+
+<!-- 图片预览弹窗 -->
+<div id="imgPreviewOverlay" class="img-preview-overlay" style="display:none">
+  <button class="img-preview-close" onclick="Mrite._closeImgPreview()">×</button>
+  <div class="img-preview-content">
+    <img id="imgPreviewImg" src="" alt="preview">
+  </div>
+  <div class="img-preview-nav">
+    <button id="imgPreviewPrev" onclick="Mrite._imgPreviewNav(-1)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span id="imgPreviewInfo" class="img-preview-info"></span>
+    <button id="imgPreviewNext" onclick="Mrite._imgPreviewNav(1)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+<div id="tablePreviewOverlay" class="table-preview-overlay" style="display:none">
+  <div class="table-preview-panel">
+    <div class="table-preview-header">
+      <span id="tablePreviewTitle">表格预览</span>
+      <button class="table-preview-close" onclick="Mrite._closeTablePreview()">×</button>
+    </div>
+    <div id="tablePreviewBody" class="table-preview-body"></div>
+  </div>
+</div>
+</body>
+</html>
