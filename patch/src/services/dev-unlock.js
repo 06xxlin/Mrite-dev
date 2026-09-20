@@ -15,6 +15,11 @@
 //   （2.6.14 的 auth.js 内部判定用的是模块内词法函数，不受导出覆写影响，
 //     所以下面同时覆写了全部授权相关 IPC 通道。）
 //
+// ★ 2.6.14 还新增了独立的「账号登录」层（src/services/user.js）：
+//   渲染层运行按钮会 await Mrite._ensureAccountLogin()，失败就弹「需要登录账号」并中止。
+//   本模块同时把账号相关 IPC（user-login-status / user-me / restore-user-session /
+//   oauth-login-start / user-logout）改成常驻已登录，配合渲染层的伪造会话。
+//
 // 另外必须收口 auth.js 的 notifyAuthState()：register() 会在启动 2s/3s 联网
 // 校验收费并广播「未激活」，不收口就会把解锁状态顶掉；渲染层也做了同样的收口。
 //
@@ -27,6 +32,10 @@
 const { ipcMain, BrowserWindow, app } = require('electron');
 
 const TAG = '[dev-unlock]';
+
+// 开发版常驻账号（渲染层 dev-unlock.js 用同一个 token）
+const DEV_TOKEN = 'mrite-dev-unlock-token';
+const DEV_USER = { username: 'developer', nickname: '开发版', avatar: '', vip: 1 };
 
 function note(msg) {
   console.log(TAG + ' ' + msg);
@@ -74,21 +83,38 @@ function install() {
     broadcastAuthorized(reason);
   };
 
-  // ── 3. 覆写授权相关 IPC（通道名与 2.6.14 auth.js register() 一一对应）──
+// ── 3. 覆写授权相关 IPC（通道名与 2.6.14 auth.js register() 一一对应）──
   override('verify-before-task', async () => ({ allowed: true, reason: '', serverExpiresAt: '' }));
   override('request-session', async () => ({ authorized: true, expiresAt: '', data: {}, tokenVersion: 0 }));
   override('start-task-verify', async () => ({ success: true, serverExpiresAt: '' }));
   override('stop-task-verify', async () => ({ success: true }));
   override('check-activation', async () => ({ valid: true, expiresAt: '' }));
   override('refresh-license', async () => ({ success: true, expiresAt: '', permanent: true, activated: true }));
-  override('get-license-status', async () => ({ success: true, activated: true, permanent: true, expiresAt: '' }));
+  override('get-license-status', async () => ({ success: true, valid: true, activated: true, permanent: true, expiresAt: '' }));
   override('check-connection', async () => ({ connected: true, region: '', lastCheck: Date.now(), ip: '' }));
   override('redeem-code', async () => ({ success: false, error: '开发版无需兑换码' }));
   override('report-usage', async () => ({ success: true, queued: true, dev: true }));
   override('report-task-log', async () => ({ success: true, queued: true, dev: true }));
   override('report-event', async () => ({ success: true, dev: true }));
 
-  // ── 4. 关掉热更新（2.6.14 新增）：开发版源码在 resources\app 目录里，
+  // ── 4. 账号登录层（2.6.14 新增）：常驻「已登录」，运行任务不再要求登录 ──
+  //    2.6.14 的运行按钮会 await Mrite._ensureAccountLogin()，失败就弹
+  //    「需要登录账号」并中止；渲染层已伪造会话，这里再把主进程侧的
+  //    账号 IPC 一并放行（跨数据目录恢复会话、退出登录等路径也走同一套）。
+  const loginStatus = () => ({ loggedIn: true, user: DEV_USER, token: DEV_TOKEN, dev: true });
+  const user = require('./user');
+  // 模块级也覆盖一份：主进程内部（如 ipc/task.js 的诊断日志）会直接调 userService.getLoginStatus()
+  user.getLoginStatus = loginStatus;
+  user.getUserProfile = async () => ({ success: true, user: DEV_USER, dev: true });
+  user.restoreUserSession = async () => ({ valid: true, user: DEV_USER, token: DEV_TOKEN, dev: true });
+  user.logoutUser = async () => ({ success: true, dev: true });
+  override('user-login-status', async () => loginStatus());
+  override('user-me', async () => ({ success: true, user: DEV_USER, dev: true }));
+  override('restore-user-session', async () => ({ valid: true, user: DEV_USER, token: DEV_TOKEN, dev: true }));
+  override('user-logout', async () => ({ success: true, dev: true }));
+  override('oauth-login-start', async () => ({ success: true, sessionToken: DEV_TOKEN, user: DEV_USER, dev: true }));
+
+  // ── 5. 关掉热更新（2.6.14 新增）：开发版源码在 resources\app 目录里，
   //    一旦官方热更包落到 userData\update\app.asar，下次启动就会被它顶掉，
   //    开发版解锁随之失效。这里把更新相关 IPC 全部改成「无更新 / 拒绝安装」。
   override('check-for-update', async () => ({ success: true, updateAvailable: false, reason: 'dev-unlock' }));
@@ -99,10 +125,11 @@ function install() {
     state: 'none', updateAvailable: false, manifest: null, dev: true,
   }));
 
-  // ── 5. 主动广播，压制 register() 内部 2s/3s 的联网校验结果 ──
+  // ── 6. 主动广播，压制 register() 内部 2s/3s 的联网校验结果 ──
   [2500, 5000, 8000, 15000].forEach((t) => setTimeout(broadcastAuthorized, t));
 
   note('开发版解锁已生效：登录 / 激活码 / 会员时长校验全部放行（Mrite 2.6.14）');
+  note('账号层已放行：界面常驻「已登录」，运行任务不再要求登录账号');
   note('任务使用「设置 → 模型配置」中的自有 API Key 直连（不走云端代理）');
   note('热更新已关闭：官方热更包不会覆盖本开发版源码');
 }

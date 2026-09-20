@@ -114,8 +114,6 @@
 <script src="features/agent/tool-labels.js"></script>
 <script src="plugins/runtime.js"></script>
 <script src="toolbar.js"></script>
-<!-- ★ 开发版解锁：必须排在 toolbar.js（定义 _isActivated/_isExpired）之后、panels/ui/shell 之前 -->
-<script src="dev-unlock.js"></script>
 <!-- write 是工坊宿主，需在页面启动前静态就绪；顺序与 manifest scripts 保持一致。 -->
 <script src="../extensions/builtin/write/modules/core.js"></script>
 <script src="../extensions/builtin/write/modules/project-browser.js"></script>
@@ -155,6 +153,10 @@
 <script src="features/templates/editor-io.js"></script>
 <script src="features/templates/selector.js"></script>
 <script src="core/dialogs.js"></script>
+<!-- ★ 开发版解锁：必须排在最后一个业务脚本 index.js 之前、且在所有定义模块
+     （toolbar.js / state.js / core/shell.js / features/settings/account-usage.js）之后，
+     否则 showLogin、账号门禁等定义会把覆盖顶掉 -->
+<script src="dev-unlock.js"></script>
 <script src="index.js"></script>
 
 <!-- 图片预览弹窗 -->
