@@ -4,13 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title></title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="styles/task-modify.css">
+  <link rel="stylesheet" href="styles/settings-templates.css">
+  <link rel="stylesheet" href="styles/home-upload.css">
+  <link rel="stylesheet" href="styles/dashboard-preview.css">
+  <link rel="stylesheet" href="styles/result-components.css">
+  <link rel="stylesheet" href="styles/write.css">
+  <link rel="stylesheet" href="styles/theme-extensions.css">
   <link rel="stylesheet" href="styles/collab.css">
   <!-- KaTeX 数学公式渲染（本地化） -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/auto-render.min.js"></script>
   <!-- CodeMirror / AntV X6 懒加载，由 shared/dom.js 按需注入 -->
+  <link rel="stylesheet" href="styles/scrollbars.css">
 </head>
 <body class="h-full overflow-hidden font-[-apple-system,BlinkMacSystemFont,'SF_Pro_Display','Helvetica_Neue',sans-serif] text-[13px] text-zinc-700 antialiased select-none bg-white">
 <div id="splashScreen" class="splash"><span class="splash-brand" id="splashBrand">Mrite</span><span class="splash-tag" id="splashTag">全网最先进的智能体</span></div>
@@ -84,33 +91,70 @@
 </div>
 
 <script src="shared/dom.js"></script>
+<script src="shared/scrollbars.js"></script>
 <script src="shared/format.js"></script>
 <script src="shared/icons.js"></script>
 <script src="shared/file-icons.js"></script>
+<script src="shared/table-render.js"></script>
+<link rel="stylesheet" href="vendor/pdfjs/web/pdf_viewer.css">
+<script src="shared/pdf-preview.js"></script>
 <script src="shared/avatar-presets.js"></script>
 <script src="shared/dialog.js"></script>
   <script src="shared/run-detect.js"></script>
 <script src="license-timer.js"></script>
 <script src="state.js"></script>
 <script src="storage.js"></script>
-<script src="agent-events.js"></script>
+<script src="features/agent/session-state.js"></script>
+<script src="features/agent/progress.js"></script>
+<script src="features/agent/live-preview.js"></script>
+<script src="features/agent/reporting.js"></script>
+<script src="features/agent/event-router.js"></script>
+<script src="features/agent/activity-log.js"></script>
+<script src="features/agent/modify-finalize.js"></script>
+<script src="features/agent/tool-labels.js"></script>
+<script src="plugins/runtime.js"></script>
 <script src="toolbar.js"></script>
-<!-- ★ 开发版解锁：必须排在 toolbar.js（定义 _isActivated）之后、panels/ui 之前 -->
+<!-- ★ 开发版解锁：必须排在 toolbar.js（定义 _isActivated/_isExpired）之后、panels/ui/shell 之前 -->
 <script src="dev-unlock.js"></script>
-<!-- ★ v2.6：write 宿主模块静态加载（不走扩展注入流程，直接内置就绪，无加载 Toast）
-     write 形式上是扩展（extensions/builtin/write/manifest.json host:true），但实际不参与扩展加载机制 -->
+<!-- write 是工坊宿主，需在页面启动前静态就绪；顺序与 manifest scripts 保持一致。 -->
+<script src="../extensions/builtin/write/modules/core.js"></script>
+<script src="../extensions/builtin/write/modules/project-browser.js"></script>
+<script src="../extensions/builtin/write/modules/file-actions.js"></script>
+<script src="../extensions/builtin/write/modules/layout-mode.js"></script>
+<script src="../extensions/builtin/write/modules/compile-ui.js"></script>
+<script src="../extensions/builtin/write/modules/project-settings.js"></script>
+<script src="../extensions/builtin/write/modules/editor.js"></script>
+<script src="../extensions/builtin/write/modules/compile.js"></script>
+<script src="../extensions/builtin/write/modules/latex-tools.js"></script>
+<script src="../extensions/builtin/write/modules/assets.js"></script>
+<script src="../extensions/builtin/write/modules/helpers.js"></script>
 <script src="../extensions/builtin/write/main.js"></script>
 <script src="panels/upload.js"></script>
 <script src="panels/progress.js"></script>
 <script src="panels/view.js"></script>
-<script src="panels/settings.js"></script>
+<script src="features/settings/provider-form.js"></script>
+<script src="features/settings/model-management.js"></script>
+<script src="features/settings/account-usage.js"></script>
+<script src="features/settings/preferences-environment.js"></script>
+<script src="features/settings/theme.js"></script>
+<script src="features/settings/extensions-app.js"></script>
 <script src="panels/modify.js"></script>
 <!-- neeter Agent 工作台桥：需在 modify.js 之后、index.js 之前 -->
 <script src="neeter-host.js"></script>
 <script src="panels/dashboard.js"></script>
 <script src="announce-popup.js"></script>
-<script src="panels/collab.js"></script>
-<script src="ui.js"></script>
+<script src="features/collab/foundation.js"></script>
+<script src="features/collab/room.js"></script>
+<script src="features/collab/presence.js"></script>
+<script src="features/collab/shared-assets.js"></script>
+<script src="features/collab/compile.js"></script>
+<script src="features/collab/events.js"></script>
+<script src="core/shell.js"></script>
+<script src="features/templates/workspace.js"></script>
+<script src="features/templates/paper-composer.js"></script>
+<script src="features/templates/editor-io.js"></script>
+<script src="features/templates/selector.js"></script>
+<script src="core/dialogs.js"></script>
 <script src="index.js"></script>
 
 <!-- 图片预览弹窗 -->

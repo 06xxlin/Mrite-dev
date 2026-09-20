@@ -39,7 +39,37 @@ function copyDirSync(src, dest) {
 
 function getRootDir() {
   if (app.isPackaged) return app.getPath('userData');
+  // ★ 开发版：加了 --dev-profile 时，用户数据（库/工作区/规则库）放到 userData，
+  //   与打包版一致；否则以「源码目录」为根，会把 Workspace-*/data/ 写进源码树。
+  if (process.argv.includes('--dev-profile')) return app.getPath('userData');
   return path.join(__dirname, '..', '..');
+}
+
+// ★ 开发版：--dev-profile 使用独立的 <名称>-dev 数据目录，并首次启动时从正式
+//   数据目录复制一份用户数据（设置、模型/API Key、规则库、工作区），
+//   这样开发版开箱即用，同时与正式版数据互不干扰（可同时运行）。
+function seedDevProfile(appDataDir, devDirName, prodDirName) {
+  try {
+    const devDir = path.join(appDataDir, devDirName);
+    if (fs.existsSync(devDir)) return; // 已存在 → 不重复播种
+    const prodDir = path.join(appDataDir, prodDirName);
+    if (!fs.existsSync(prodDir)) return; // 没有正式数据 → 全新使用
+    const SKIP = /^(Cache|Code Cache|GPUCache|DawnGraphiteCache|DawnWebGPUCache|Dictionaries|Shared Dictionary|blob_storage|Network|Session Storage|SharedStorage-wal)$/i;
+    fs.mkdirSync(devDir, { recursive: true });
+    let copied = 0;
+    for (const item of fs.readdirSync(prodDir, { withFileTypes: true })) {
+      if (SKIP.test(item.name) || item.name === 'DevToolsActivePort' || item.name === 'lockfile') continue;
+      const s = path.join(prodDir, item.name), d = path.join(devDir, item.name);
+      try {
+        if (item.isDirectory()) copyDirSync(s, d);
+        else { fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(s, d); }
+        copied++;
+      } catch {}
+    }
+    startupLog(`[开发版] 已从 ${prodDirName} 播种开发数据目录 ${devDirName}（${copied} 项）`);
+  } catch (e) {
+    startupLog('[开发版] WARN 播种开发数据失败: ' + (e && e.message ? e.message : e));
+  }
 }
 
 // ★ v2.6.12 起：升级版本号后，把旧版 MriteUltra-<版本> 的用户数据一次性迁移到新版目录。
@@ -51,30 +81,49 @@ function migrateOldUserData(appDataDir, currentDirName) {
   try {
     const currentDir = path.join(appDataDir, currentDirName);
     if (fs.existsSync(currentDir)) return; // 当前目录已存在（非首次/已迁移）→ 不重复
-    const curVer = String(currentDirName).replace(/^MriteUltra-/, '').split('.').map(Number);
+    // ★ 解析版本号前必须先剥掉预发布后缀（-beta.1 / -rc.2 之类）再按点分段。
+    //   否则 '2.6.14-beta.1'.split('.').map(Number) → [2, 6, NaN, 1]，而下面比较时
+    //   用的是 `curVer[i] || 0` —— **`NaN || 0` 会得到 0**（NaN 是 falsy），当前版本
+    //   于是被当成 [2,6,0,1]（比谁都旧）→ isOlder 对任何目录都返回 false →
+    //   **一个旧版都找不到、全部不迁移**，用户的 workspace/history/规则库/设置全部不继承，
+    //   表现为「升级后所有任务和记录都不见了」。实测 'MriteUltra-2.6.14-beta.1' 对
+    //   'MriteUltra-2.6.13' 返回 false，正是这个坑。
+    const parseVer = (n) => String(n).replace(/^MriteUltra-/, '').split('-')[0].split('.').map(Number);
+    // ★ 预发布标记（MriteUltra-2.6.14-beta.1）：数字段剥离后与正式版 2.6.14 完全相同，
+    //   所以「谁更新」不能只看数字段，要按 semver：同版本号时预发布 < 正式版。
+    //   否则 beta 转正式版（2.6.14-beta.1 → 2.6.14）时当前目录 MriteUltra-2.6.14 找不到
+    //   任何「旧版」（beta 目录被判为相等 → 不是旧版），却会顺手选中更老的 MriteUltra-2.6.13 做迁移源，
+    //   结果 beta 期间的任务/设置全丢、还倒退回 2.6.13 的旧数据。
+    const isPre = (n) => String(n).replace(/^MriteUltra-/, '').indexOf('-') !== -1;
+    const curVer = parseVer(currentDirName);
     const isOlder = (name) => {
-      const cand = String(name).replace(/^MriteUltra-/, '').split('.').map(Number);
+      const cand = parseVer(name);
       const n = Math.max(curVer.length, cand.length);
       for (let i = 0; i < n; i++) {
         const c = curVer[i] || 0, v = cand[i] || 0;
         if (v > c) return false; // 比当前新 → 不属于「旧版」
         if (v < c) return true;
       }
-      return false; // 相等
+      // 数字段相等：候选是预发布、当前是正式版 → 候选更旧；反之/同为预发布 → 不迁移
+      return isPre(name) && !isPre(currentDirName);
     };
     // 扫描 %APPDATA% 下版本化目录（排除 -collab 与当前名），选「比当前低且最高」的那个作为旧版来源
     const candidates = fs.readdirSync(appDataDir, { withFileTypes: true })
-      .filter(d => d.isDirectory() && /^MriteUltra-\d+(\.\d+)*$/.test(d.name) && d.name !== currentDirName)
-      .map(d => ({ name: d.name, ver: String(d.name).replace(/^MriteUltra-/, '').split('.').map(Number) }))
+      // ★ 目录名正则要放行预发布后缀（MriteUltra-2.6.14-beta.1），否则新目录自己
+      //   将来无法成为下一次升级的迁移来源。
+      .filter(d => d.isDirectory() && /^MriteUltra-\d+(\.\d+)*(-[0-9A-Za-z.-]+)?$/.test(d.name) && d.name !== currentDirName)
+      .map(d => ({ name: d.name, ver: parseVer(d.name) }))
       .filter(c => isOlder(c.name))
-      .sort((a, b) => { const n = Math.max(a.ver.length, b.ver.length); for (let i = 0; i < n; i++) { const x = a.ver[i] || 0, y = b.ver[i] || 0; if (x !== y) return y - x; } return 0; });
+      // 数字段降序；数字段相同（2.6.14 与 2.6.14-beta.1 并存）时正式版优先，取更完整的用户数据
+      .sort((a, b) => { const n = Math.max(a.ver.length, b.ver.length); for (let i = 0; i < n; i++) { const x = a.ver[i] || 0, y = b.ver[i] || 0; if (x !== y) return y - x; } return (isPre(a.name) ? 1 : 0) - (isPre(b.name) ? 1 : 0); });
     const old = candidates[0];
     if (!old) return; // 无旧版 → 全新安装，无需迁移
     const oldDir = path.join(appDataDir, old.name);
     if (!fs.existsSync(oldDir)) return;
     fs.mkdirSync(currentDir, { recursive: true });
     // 跳过 Electron 临时缓存与运行时锁文件（锁文件/开发端口文件会干扰新实例启动）
-    const SKIP = /^(Cache|Code Cache|GPUCache|DawnGraphiteCache|DawnWebGPUCache|Dictionaries|Shared Dictionary|SharedStorage-wal)$/i;
+    // update 是旧安装基座专属的热更新负载；迁入新安装版本会让旧补丁反过来覆盖新基座。
+    const SKIP = /^(Cache|Code Cache|GPUCache|DawnGraphiteCache|DawnWebGPUCache|Dictionaries|Shared Dictionary|SharedStorage-wal|update)$/i;
     let copied = 0;
     for (const item of fs.readdirSync(oldDir, { withFileTypes: true })) {
       if (SKIP.test(item.name) || item.name === 'DevToolsActivePort' || item.name === 'lockfile') continue;
@@ -144,8 +193,13 @@ function cleanupUncommitted(rootDir, db) {
           if (fs.existsSync(_p)) { sf = _p; break; }
         }
         if (sf) {
-          const ws = JSON.parse(fs.readFileSync(sf, 'utf-8'));
-          if (ws.inputLoaded) { committed.add(d.name); continue; }
+          // ★ 单独 try：状态文件损坏/半截时不能让整个外层 try 抛出 —— 否则下面的
+          //   「求解/论文 有内容」兜底检查会被一并跳过，一个已有产出的工作区会被当垃圾删掉。
+          //   （原子写 + .bak 已大幅降低该概率，这里再兜一层，与 history._getCommittedNames 对齐。）
+          try {
+            const ws = JSON.parse(fs.readFileSync(sf, 'utf-8'));
+            if (ws.inputLoaded) { committed.add(d.name); continue; }
+          } catch {}
         }
         const dPath = path.join(wsDir, d.name);
         for (const sub of ['求解', '论文']) {
@@ -232,18 +286,34 @@ async function bootstrap() {
   let mainWindow = null;
   const isDev = process.argv.includes('--dev');
 
-  // ★ 数据目录名带版本号：升级后 dataDirName 改变，旧版目录会被弃用。为保留用户数据，先在下方做
-  //   「旧版数据目录一次性迁移」（migrateOldUserData），把库/设置/规则库/工作区等用户数据带过来；
-  //   内置模板仍按规则库版本号重新种入干净版（保留用户自建资产）。
+  // ★ 正式入口由 update-loader 把 userData 固定为 MriteUltra-2.6.13；后续版本直接复用，
+  //   不再按 package.json 版本号创建新数据空间。下面的动态分支仅是绕过稳定加载器时的兜底。
   // ★ 单机双开联调：--multi-instance 时用独立 userData（不碰主实例的库/项目），并跳过单实例锁
   const multiInstance = process.argv.includes('--multi-instance');
-  const appDataDir = app.getPath('appData');
-  const dataDirName = multiInstance
-    ? 'MriteUltra-collab'
-    : 'MriteUltra-' + String(require('../../package.json').version || 'x');
-  // ★ v2.6.12 起：升级版本号后一次性迁移旧版用户数据（仅非 multi-instance、且当前目录不存在时）
-  if (!multiInstance) migrateOldUserData(appDataDir, dataDirName);
-  try { app.setPath('userData', path.join(appDataDir, dataDirName)); } catch (e) {}
+  const updateSmokeTest = process.env.MRITE_UPDATE_SMOKE_TEST === '1';
+  // ★ 开发版：--dev-profile 使用独立数据目录 MriteUltra-2.6.13-dev，
+  //   首次启动时从正式目录播种一份用户数据（设置/API Key/规则库/工作区），
+  //   与正式版互不干扰、可同时运行。
+  const devProfile = process.argv.includes('--dev-profile');
+  const SHARED_PROD_DIR = 'MriteUltra-2.6.13';
+  let forcedUserData = String(process.env.MRITE_BOOTSTRAP_USER_DATA || '').trim();
+  if (devProfile) {
+    // update-loader 已把 userData 固定为正式共享目录；若它已经切到 -dev（新版加载器行为），
+    // 这里要避免再次追加，得到 -dev-dev 这种目录名。
+    const baseDir = forcedUserData ? path.dirname(forcedUserData) : app.getPath('appData');
+    const configured = forcedUserData ? path.basename(forcedUserData) : SHARED_PROD_DIR;
+    const prodDir = configured.endsWith('-dev') ? configured.slice(0, -'-dev'.length) : configured;
+    seedDevProfile(baseDir, prodDir + '-dev', prodDir);
+    forcedUserData = path.join(baseDir, prodDir + '-dev');
+    process.env.MRITE_BOOTSTRAP_USER_DATA = forcedUserData;
+  }
+  const appDataDir = forcedUserData ? path.dirname(forcedUserData) : app.getPath('appData');
+  const dataDirName = forcedUserData
+    ? path.basename(forcedUserData)
+    : (devProfile ? SHARED_PROD_DIR + '-dev' : (multiInstance ? 'MriteUltra-collab' : SHARED_PROD_DIR));
+  // 兼容更早安装：固定目录尚不存在时，才从 2.6.12 等更老目录整体复制一次。
+  if (!multiInstance && !devProfile) migrateOldUserData(appDataDir, dataDirName);
+  try { app.setPath('userData', forcedUserData || path.join(appDataDir, dataDirName)); } catch (e) {}
 
   // ★ 版本号从 package.json 读取（单一来源），不再硬编码
   startupLog('Mrite v' + (require('../../package.json').version || 'unknown') + ' 启动中...');
@@ -275,7 +345,7 @@ async function bootstrap() {
   });
 
   // 2. 单实例锁（--multi-instance 时跳过，用于单机双开联调协作）
-  if (!multiInstance) {
+  if (!multiInstance && !updateSmokeTest) {
     startupLog('获取单实例锁...');
     if (!app.requestSingleInstanceLock()) {
       startupLog('已有实例在运行，退出');
@@ -324,10 +394,8 @@ async function bootstrap() {
     try { setConfiguredAppEnvPath(String(dbModule.getSetting('appEnvPath', '') || '')); } catch {}
     const appEnvDir = getAppEnvDir();
     startupLog(appEnvDir ? '检测到集成环境: ' + appEnvDir : '未检测到集成环境（回退内置资源）');
-    // ★ 预热 Python/LaTeX 状态缓存：环境配置面板打开即秒回「已连接」，不再每次重新 spawn 探测
-    //   （Python getStatus 会 spawn --version 两次，~300ms；集成环境写死/静态，预热一次即可复用）。
-    //   用 setImmediate 后台预热，避免 getStatus 挂起（坏环境 15s 超时）拖慢主进程启动。
-    try { if (appEnvDir) setImmediate(function() { try { require('../env/python').getStatus(); } catch {} }); } catch {}
+    // Python 运行前检测已改成纯文件级快速检查，不在启动阶段 spawn 子进程。
+    // 避免坏环境的 --version 超时拖慢整个主进程；详细版本仅在设置页按需探测。
     try { if (appEnvDir) setImmediate(function() { try { require('../env/latex').getStatus(); } catch {} }); } catch {}
   } catch (e) {}
   let rulesLib = null;
@@ -335,28 +403,63 @@ async function bootstrap() {
   const workspace = createWorkspace(rootDir, config.projectsDirName, rulesLib);
   startupLog('工作区创建完成: ' + workspace.projectsDir);
 
-  // ★ v2.6 协作共享空间：启动时直接在根目录创建 Workspace-Share/（常驻可见）
-  //   用户不用进协作模式就能在根目录看到这个文件夹
+  // 旧版全局协作目录一次性迁移：只把能匹配项目名的资源归入该项目/共享文件区；
+  // 无法判断归属的旧临时资源直接清理，绝不复活 Workspace-Share 或「协作旧图片备份」。
   try {
-    const shareDir = path.join(rootDir, config.collabSharedDirName);
-    if (!fs.existsSync(shareDir)) fs.mkdirSync(shareDir, { recursive: true });
-    // 迁移老名称 Workspace-Shell → Workspace-Share（如果之前代码已建过）
-    const oldShareDir = path.join(rootDir, 'Workspace-Shell');
-    if (fs.existsSync(oldShareDir) && oldShareDir !== shareDir) {
+    const uniqueTarget = (dst) => {
+      if (!fs.existsSync(dst)) return dst;
+      const ext = path.extname(dst), base = dst.slice(0, dst.length - ext.length);
+      let n = 1, out = base + '_旧版' + ext;
+      while (fs.existsSync(out)) out = base + '_旧版' + (++n) + ext;
+      return out;
+    };
+    const mergeMove = (src, dst) => {
+      if (!src || !fs.existsSync(src)) return;
+      const st = fs.lstatSync(src);
+      if (!st.isDirectory()) {
+        fs.mkdirSync(path.dirname(dst), { recursive: true });
+        fs.renameSync(src, uniqueTarget(dst));
+        return;
+      }
+      fs.mkdirSync(dst, { recursive: true });
+      for (const name of fs.readdirSync(src)) mergeMove(path.join(src, name), path.join(dst, name));
+      try { fs.rmdirSync(src); } catch {}
+    };
+    const ensureRealDir = (dir) => {
+      let linked = '';
       try {
-        if (!fs.existsSync(shareDir)) { fs.renameSync(oldShareDir, shareDir); }
-        else {
-          for (const name of fs.readdirSync(oldShareDir)) {
-            const src = path.join(oldShareDir, name);
-            const dst = path.join(shareDir, name);
-            if (!fs.existsSync(dst)) { try { fs.renameSync(src, dst); } catch {} }
-          }
-          try { fs.rmSync(oldShareDir, { recursive: true, force: true }); } catch {}
+        if (fs.existsSync(dir) && fs.lstatSync(dir).isSymbolicLink()) {
+          try { linked = fs.realpathSync(dir); } catch {}
+          fs.unlinkSync(dir);
         }
-      } catch (e) { startupLog('WARN: Workspace-Shell → Workspace-Share 迁移失败: ' + e.message); }
+      } catch {}
+      fs.mkdirSync(dir, { recursive: true });
+      if (linked && fs.existsSync(linked) && path.resolve(linked) !== path.resolve(dir)) mergeMove(linked, dir);
+    };
+    const normalWorkspace = path.join(rootDir, 'workspace');
+    const obsoleteBackup = path.join(normalWorkspace, '协作旧图片备份');
+    if (fs.existsSync(obsoleteBackup)) fs.rmSync(obsoleteBackup, { recursive: true, force: true });
+    for (const legacyName of ['Workspace-Share', 'Workspace-Shell']) {
+      const legacyRoot = path.join(rootDir, legacyName);
+      if (!fs.existsSync(legacyRoot)) continue;
+      for (const entry of fs.readdirSync(legacyRoot, { withFileTypes: true })) {
+        const src = path.join(legacyRoot, entry.name);
+        const candidates = [path.join(normalWorkspace, entry.name), path.join(rootDir, config.projectsDirName, entry.name)];
+        const projectDir = entry.name === '_shared' ? '' : candidates.find(p => {
+          try { return fs.existsSync(p) && fs.statSync(p).isDirectory(); } catch { return false; }
+        });
+        if (!projectDir) {
+          fs.rmSync(src, { recursive: true, force: true });
+          continue;
+        }
+        const dst = path.join(projectDir, '共享文件区');
+        ensureRealDir(dst);
+        mergeMove(src, dst);
+      }
+      try { fs.rmdirSync(legacyRoot); } catch {}
     }
-    startupLog('协作共享空间: ' + shareDir);
-  } catch (e) { startupLog('WARN: 创建 Workspace-Share 失败: ' + e.message); }
+    startupLog('协作资源目录规则: <项目>/共享文件区；成员缓存: workspace/_collab');
+  } catch (e) { startupLog('WARN: 迁移旧协作共享目录失败: ' + e.message); }
 
   // 8.5 规则库就绪（打包态从内置 app.asar/rules-library 种入 userData；dev 直接用项目根 rules-library/）
   //     必须在 resolveCurrentTemplate 之前执行：旧版规则库会被清空重种，避免据此解析出已失效的模板。
@@ -397,20 +500,19 @@ async function bootstrap() {
   startupLog('注册 IPC 模块...');
   registerAll(ctx);
   authService.register();
-  // ★ 开发版解锁：去除登录/激活码/会员时长校验（详见 src/services/dev-unlock.js）
-  try { require('../services/dev-unlock').install(); } catch (e) { startupLog('WARN: 开发版解锁模块加载失败 — ' + (e && e.message ? e.message : e)); }
   userService.register();
   updaterService.register();
-  // 热更新：启动时检查回滚/清理（返回 noop 表示无挂起更新）
-  try { updaterService.bootVerify(); } catch (e) { startupLog('WARN: bootVerify 异常 — ' + (e && e.message ? e.message : e)); }
+  // ★ 开发版解锁必须排在 authService.register() / updaterService.register() 之后：
+  //   它们随后注册的同名 IPC（授权校验、热更新）会覆盖前面挂的 handler。
+  try { require('../services/dev-unlock').install(); } catch (e) { startupLog('WARN: 开发版解锁模块加载失败 — ' + (e && e.message ? e.message : e)); }
+  // 热更新负载的选择/失败回滚必须早于 bootstrap，由 main.js 的稳定加载器完成。
 
   // 11. 退出清理
   function cleanupOnExit() {
     try { taskService.abort(); } catch {}
     try { procMgr.killAll(); } catch {}
-    try { procMgr.killOrphans(); } catch {} // ★ 杀掉所有残留的 claude/python/xelatex 进程
     try { apiProxy.stop(); } catch {}
-    // ★ 退出收尾：房主写回共享文件并删除临时项目目录；成员丢弃临时副本；清理 _collab 遗留
+    // 退出收尾：正式数据已在房主项目；成员丢弃临时副本并清理 _collab。
     try { collabServer.stopHost && collabServer.stopHost(); } catch {}
     try { collabClient.leave && collabClient.leave(); } catch {}
     try { if (collabClient.cleanupStaleCollabDirs) collabClient.cleanupStaleCollabDirs(); } catch {}
@@ -438,7 +540,17 @@ async function bootstrap() {
     startupLog('app.whenReady() 触发，创建窗口...');
     // ★ 初始化持久化日志：删除超过 1 天的旧日志
     try { require('./logger').rotate(); } catch {}
-    setImmediate(() => { try { cleanupUncommitted(rootDir, db); } catch {} });
+    // ★ 先补登记存量记录，再清理空工作区。
+    //   补登记只认「有产出（inputLoaded 或 求解/论文 非空）且 history 无任何行」的目录，
+    //   清理只删空目录，两者互不影响；先补齐更符合直觉，将来清理逻辑收紧也不会误删未登记的。
+    //   historyService.init(ctx) 在 ipc/project.js 的 register(ctx) 里执行，早于 app.whenReady()。
+    setImmediate(() => {
+      try {
+        const r = require('../services/history').backfillHistoryRows();
+        if (r && r.added) startupLog('历史记录补登记：新增 ' + r.added + ' 条');
+      } catch (e) { startupLog('历史记录补登记失败: ' + ((e && e.message) || e)); }
+      try { cleanupUncommitted(rootDir, db); } catch {}
+    });
     mainWindow = createWindow(config, getIconPath);
 
     // ★ 预加载求解 SDK（后台预热 import 缓存）：
@@ -473,8 +585,17 @@ async function bootstrap() {
       });
     } catch (e) {}
 
-    // 热更新：本次启动成功，确认并清理更新标记
-    try { updaterService.confirmUpdate(); } catch {}
+    // 热更新：页面完整加载且渲染进程保持存活后才确认。若在此之前崩溃，下一次启动自动回滚。
+    let rendererHealthy = true;
+    mainWindow.webContents.once('render-process-gone', () => { rendererHealthy = false; });
+    mainWindow.webContents.once('did-fail-load', () => { rendererHealthy = false; });
+    mainWindow.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        if (rendererHealthy && mainWindow && !mainWindow.isDestroyed()) {
+          try { updaterService.confirmUpdate(); } catch {}
+        }
+      }, 3000);
+    });
 
     mainWindow.on('page-title-updated', (event) => { event.preventDefault(); });
     mainWindow.on('close', (event) => {

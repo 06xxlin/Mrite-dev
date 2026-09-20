@@ -4,8 +4,11 @@
 //       面板切换与任务运行不再被登录/激活拦截。
 //
 // 加载位置：renderer/index.html 中，排在 license-timer.js / state.js / toolbar.js
-//           之后，panels/*.js 与 ui.js 之前 —— 保证既覆盖已有实现，
-//           又赶在业务代码读取这些判定之前生效。
+//           之后，extensions/*、panels/*、core/shell.js、index.js 之前 ——
+//           保证既覆盖这些文件里已有的实现（_isActivated / _isExpired /
+//           _onAuthStateChanged / _licenseTimer），又赶在业务代码调用之前生效。
+//
+// 适配版本：Mrite 2.6.14
 // ═══════════════════════════════════════════════════════════════════════════
 (function () {
   window.Mrite = window.Mrite || {};
@@ -19,6 +22,7 @@
   M._isExpired = function () { return false; };
 
   // ── 2. 许可证计时器：不启动倒计时、永不过期 ──
+  //    （2.6.14 里 _licenseTimer 由 license-timer.js 定义，_startLicenseTimer 供 state.js 调用）
   if (M._licenseTimer) {
     M._licenseTimer.isExpired = function () { return false; };
     M._licenseTimer.getRemainingMs = function () { return 0; };
@@ -27,9 +31,17 @@
     M._licenseTimer.init = function () {};
     M._licenseTimer.destroy = function () {};
   }
+  M._startLicenseTimer = function () {};
+  M._onLicenseExpired = function () { stripOverlays(); };
+  M._showExpiredPopup = function () { stripOverlays(); };
+  M._showLockedDialog = function () { stripOverlays(); };
+  M._showTamperedDialog = function () { stripOverlays(); };
+
   // 清除历史到期时间缓存（否则启动时计时器会按旧时间触发过期回调）
   try {
     localStorage.removeItem('mrite-license-expiry');
+    // ★ 2.6.14 的 core/shell.js 自带这个开关：DevTools 里设过它就能跳过授权拦截，
+    //   这里直接置位，让面板切换/子面板渲染也不被拦。
     localStorage.setItem('mrite_dev_bypass_auth', '1');
   } catch (e) {}
 
@@ -78,12 +90,15 @@
         M.STATE.settings.inviteExpiresAt = '';
         if (M.STATE.settings.apiKey) M.STATE.sessionAuthorized = true;
       }
+      M.STATE.sessionAuthorized = true;
+      M.STATE.authState = 'authorized';
       if (M._renderAccount) M._renderAccount();
       if (M._syncHomeStatus) M._syncHomeStatus();
       if (M.updateStatusIndicator) M.updateStatusIndicator();
+      if (M.updateButtonStates) M.updateButtonStates();
     } catch (e) {}
     stripOverlays();
   }, 1200);
 
-  console.log(TAG + ' 渲染层解锁已生效：登录 / 激活遮挡全部关闭');
+  console.log(TAG + ' 渲染层解锁已生效：登录 / 激活遮挡全部关闭（Mrite 2.6.14）');
 })();
