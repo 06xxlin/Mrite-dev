@@ -37,11 +37,17 @@ function copyDirSync(src, dest) {
   }
 }
 
+// ★ 开发版安装包标记：app 目录下存在 dev-profile.flag（由安装包写入）时，
+//   等同常开 --dev-profile —— 双击 Mrite.exe 即用独立的 -dev 数据目录。
+function hasDevProfileFlag() {
+  try { return fs.existsSync(path.join(__dirname, '..', '..', 'dev-profile.flag')); } catch (e) { return false; }
+}
+
 function getRootDir() {
   if (app.isPackaged) return app.getPath('userData');
   // ★ 开发版：加了 --dev-profile 时，用户数据（库/工作区/规则库）放到 userData，
   //   与打包版一致；否则以「源码目录」为根，会把 Workspace-*/data/ 写进源码树。
-  if (process.argv.includes('--dev-profile')) return app.getPath('userData');
+  if (process.argv.includes('--dev-profile') || hasDevProfileFlag()) return app.getPath('userData');
   return path.join(__dirname, '..', '..');
 }
 
@@ -294,7 +300,8 @@ async function bootstrap() {
   // ★ 开发版：--dev-profile 使用独立数据目录 MriteUltra-2.6.13-dev，
   //   首次启动时从正式目录播种一份用户数据（设置/API Key/规则库/工作区），
   //   与正式版互不干扰、可同时运行。
-  const devProfile = process.argv.includes('--dev-profile');
+  //   app 目录里存在 dev-profile.flag（开发版安装包会带）时等同常开。
+  const devProfile = process.argv.includes('--dev-profile') || hasDevProfileFlag();
   const SHARED_PROD_DIR = 'MriteUltra-2.6.13';
   let forcedUserData = String(process.env.MRITE_BOOTSTRAP_USER_DATA || '').trim();
   if (devProfile) {

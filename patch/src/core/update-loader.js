@@ -48,9 +48,16 @@ function isDevBuild() {
   try { return fs.existsSync(path.join(__dirname, '..', 'services', 'dev-unlock.js')); } catch (_) { return false; }
 }
 
+// ★ 开发版安装包：app 目录里放了 dev-profile.flag 时，等同于始终带 --dev-profile，
+//   装完双击 Mrite.exe 就用独立的 <正式目录>-dev 数据目录，不用额外加参数。
+function isDevProfile() {
+  if (process.argv.includes('--dev-profile')) return true;
+  try { return fs.existsSync(path.join(__dirname, '..', '..', 'dev-profile.flag')); } catch (_) { return false; }
+}
+
 function prepareUserData(app, baseVersion) {
   const multiInstance = process.argv.includes('--multi-instance');
-  const devProfile = process.argv.includes('--dev-profile');
+  const devProfile = isDevProfile();
   const smokeRoot = process.env.MRITE_UPDATE_SMOKE_TEST === '1'
     ? String(process.env.MRITE_UPDATE_SMOKE_ROOT || '').trim()
     : '';
