@@ -24,13 +24,14 @@
 
 ---
 
-## 二、补丁内容（5 个文件）
+## 二、补丁内容（6 个文件）
 
 | 文件 | 类型 | 作用 |
 | --- | --- | --- |
 | `patch/src/services/dev-unlock.js` | 新增 | 主进程解锁：放行授权判定 + 覆盖授权 IPC + **放行账号登录 IPC** + 关闭热更新 + 广播「已授权」 |
 | `patch/src/core/bootstrap.js` | 修改 | 在 `authService.register()` / `userService.register()` / `updaterService.register()` 之后调用 `dev-unlock.install()`；新增 `--dev-profile` 独立数据目录 |
 | `patch/src/core/update-loader.js` | 修改 | 开发版**永不加载**官方热更新包，避免解锁代码被热更覆盖；`--dev-profile` 指向 `-dev` 数据目录 |
+| `patch/src/services/task/executable.js` | 修改 | 目录模式（`resources\app`，没有 `app.asar.unpacked`）下也能找到 `claude.exe`：增加对 `app\node_modules\@anthropic-ai\...\@anthropic-ai\` 的目录扫描 |
 | `patch/renderer/dev-unlock.js` | 新增 | 渲染层解锁：**伪造常驻登录会话** + 登录遮罩/过期弹窗置空 + `_isActivated` 恒为 true |
 | `patch/renderer/index.html` | 修改 | 在**最后一个业务脚本 `index.js` 之前**引入 `dev-unlock.js` |
 
@@ -304,6 +305,48 @@ Internal compiler error #12345: error mmapping datablock to 164525.
 | `Mrite_env` | ~2385MB | 集成环境：Python(+科学计算包) / TinyTeX / pandoc / pwsh |
 | `tools` | ~0.4MB | 维护脚本（asar 工具、验证脚本） |
 
-> 刻意**不装** `resources\app.asar`、`app.asar.unpacked` 与两个官方归档：
-> 开发版走目录模式，原生模块在 `resources\app\node_modules` 里已有一份，
-> `claude.exe` 的候选列表也会回退到该路径（见 `task/executable.js`）。
+> 刻意**不装** `resources\app.asar` 与 `app.asar.unpacked`（省 250MB）：开发版走目录模式，
+> 原生模块在 `resources\app\node_modules` 里已有一份。
+> ⚠ 前提是已应用 `patch/src/services/task/executable.js` 那处补丁——否则 `claude.exe`
+> 解析为 null、任务起不来（官方只在 `app.asar.unpacked` 下做目录扫描）。
+> 打包装完后**务必验证**（见下）。
+
+### 安装后必做的验证
+
+```powershell
+# 装到临时目录（静默、不会创建桌面快捷方式），再带调试端口启动
+& "Mrite-Dev-2.6.14-Setup.exe" /S /D=D:\MriteDevTest
+Start-Process "D:\MriteDevTest\Mrite.exe" -ArgumentList "--dev","--remote-debugging-port=9333","--inspect=9334"
+node tools\verify-installed-dev.js 9334   # 看 claudeExe / appEnvDir / userData / verifySessionForOperation
+node tools\verify-dev-build.js 9333       # 看界面解锁与账号状态
+```
+
+`claudeExe` 必须解析到安装目录下的真实路径（不是 `null`），`appEnvDir` 必须是安装目录下的
+`Mrite_env`，`userData` 必须是 `%APPDATA%\MriteUltra-2.6.13-dev`。
+
+---
+
+## 十二、发布到 GitHub Releases
+
+仓库：<https://github.com/06xxlin/Mrite-dev>（公开）。
+
+流程（本机凭据来自 Windows 凭据管理器里的 `git:https://06xxlin@github.com`，不落盘）：
+
+```powershell
+# 1) 先建 draft（避免上传中断留下半个已发布版本）
+POST https://api.github.com/repos/06xxlin/Mrite-dev/releases
+     { tag_name: "v2.6.14-dev", target_commitish: "main", name: "Mrite 开发版 v2.6.14", draft: true, body: "..." }
+
+# 2) 上传资产（1GB 左右，按网速可能十几分钟到几十分钟）
+POST https://uploads.github.com/repos/06xxlin/Mrite-dev/releases/<id>/assets?name=Mrite-Dev-2.6.14-Setup.exe
+     Content-Type: application/octet-stream   Body: 安装包文件
+
+# 3) 转正式发布
+PATCH https://api.github.com/repos/06xxlin/Mrite-dev/releases/<id>   { draft: false }
+```
+
+两点注意：
+
+- 仓库是 **public**，`git ls-remote` / 读 API 免鉴权；建 release 与上传资产需要带 `repo` 权限的 token。
+- 资产的**同名覆盖**：重发同一版本时先 `DELETE .../releases/assets/<asset_id>` 再上传，
+  否则会得到 `already_exists`。
