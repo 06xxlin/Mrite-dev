@@ -129,6 +129,12 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 | --- | --- | --- |
 | 直接双击 `Mrite.exe` | `%APPDATA%\MriteUltra-2.6.13` | 与正式版共用数据：设置 / API Key / 规则库 / 工作区都在这里 |
 | `electron.exe <ROOT>\resources\app --dev-profile --dev` | `%APPDATA%\MriteUltra-2.6.13-dev` | 源目录直接运行、带 DevTools；首次启动自动从正式目录播种一份用户数据，与正式版互不干扰 |
+| 双击 `Mrite.exe`（app 目录里有 `dev-profile.flag`） | `%APPDATA%\MriteUltra-2.6.13-dev` | 等价于常开 `--dev-profile`：安装版开发包用这个标记，装完双击即用独立数据目录 |
+
+> **`dev-profile.flag` 标记**：在 `resources\app\` 下放一个同名空文件即可，
+> 补丁里的 `update-loader.js`（决定 userData）与 `bootstrap.js`（决定 rootDir/播种）
+> 都会认它。删掉该文件就回到「与正式版共用 `MriteUltra-2.6.13`」。
+> 生成一个带此标记的开发版安装包见第十一节。
 
 2.6.14 起 userData 被加载器**固定**为 `MriteUltra-2.6.13`（不再随版本号新建目录），
 补丁在此基础上加了 `--dev-profile` 分支指向 `-dev` 目录。
@@ -221,3 +227,80 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 > ⚠ 这些脚本只做**只读**检查。**不要**去调用 `Mrite.onRun()` 做「门禁测试」——
 > 那会真的启动任务并消耗 API 额度（`window.electronAPI` 是 contextBridge 暴露的
 > 冻结对象，赋值打桩无效）。
+
+---
+
+## 十一、开发版安装包（Setup.exe）是怎么做的
+
+产物：`Mrite-Dev-2.6.14-Setup.exe`（约 1.5GB，NSIS 安装器 + 内嵌 7z 载荷）。
+免管理员、可自选安装目录、可选桌面快捷方式、带卸载项。
+
+### 构建目录 `D:\Mrite2.6.13\_devtools\setup-build\`
+
+| 文件 | 说明 |
+| --- | --- |
+| `stage.ps1` | 生成载荷：程序根文件 + `resources\app`(开发源码) + `resources\assets` + `_devtools\electron` + `Mrite_env` + `tools`，并写入 `dev-profile.flag` 与安装版 `start-dev.bat` |
+| `Mrite-Dev.nsi` | NSIS 脚本（MUI2：欢迎 / 安装目录 / 组件 / 安装 / 完成 + 卸载页） |
+| `payload.7z` | 载荷压缩包（7zr `-mx=7 -mmt`，约 1.4GB） |
+| `icon.ico` | 取自 `resources\assets\icons\icon.ico` |
+| `..\nsis\bin\makensis.exe` | NSIS 3.04（来自 electron-builder-binaries） |
+| `..\nsis\7zr.exe` | 7-Zip 26.03 精简版，随安装包发布，安装时用它解包 |
+
+### 两条构建命令
+
+```powershell
+# 1) 载荷（在 setup-build 目录）
+$zr = "D:\Mrite2.6.13\_devtools\nsis\7zr.exe"
+Push-Location "D:\Mrite2.6.13\_devtools\setup-build\payload"
+& $zr a -t7z -mx=7 -mmt=on -ms=on "..\payload.7z" "*"
+Pop-Location
+
+# 2) 编译安装包
+& "D:\Mrite2.6.13\_devtools\nsis\bin\makensis.exe" /V1 `
+  "D:\Mrite2.6.13\_devtools\setup-build\Mrite-Dev.nsi"
+```
+
+> `Mrite-Dev.nsi` 用 `!ifndef` 开放了 `PAYLOAD_7Z` / `OUTFILE` / `SEVENZR`，
+> 便于用小载荷快速验证脚本：
+> `makensis "/DPAYLOAD_7Z=...\payload-small.7z" "/DOUTFILE=...\test.exe" Mrite-Dev.nsi`
+
+### ⚠ 关键坑：不能用 `File /r` 打 3GB+ 载荷
+
+6 万个文件、3.34GB 直接用 `File /r` 会让 32 位 `makensis` 在压缩阶段抛
+
+```
+Internal compiler error #12345: error mmapping datablock to 164525.
+```
+
+（datablock 的 mmap 失败，且失败偏移每次都不同；`SetDatablockOptimize off`、
+去掉 `SetCompressorDictSize 64` 都不解决。）
+
+所以改成：**NSIS 只内嵌一个已压缩的 `payload.7z` + `7zr.exe`**（`SetCompress off`
+存原始数据，datablock 里只有两个文件，编译几秒钟完成），安装时由 `nsExec` 调用
+`7zr x` 解包到 `$INSTDIR`，再删掉这两个临时文件。
+
+### 安装行为
+
+| 项 | 值 |
+| --- | --- |
+| 默认安装目录 | `%LOCALAPPDATA%\Programs\Mrite-Dev`（可在安装向导里改；会记住上次选择） |
+| 权限 | 免管理员（`RequestExecutionLevel user`） |
+| 快捷方式 | 开始菜单「Mrite 开发版」文件夹（主程序 / 开发模式 / 说明 / 卸载）+ **桌面快捷方式（可勾选，默认勾选）** |
+| 卸载项 | `HKCU\...\Uninstall\MriteDev`，控制面板「应用」里可卸载；卸载时询问是否删除用户数据（默认保留） |
+| 路径保护 | 安装目录 > 90 字符 或含非英文字符时弹窗警告（Mrite 的 Python/LaTeX 在中文或过深路径下会失效） |
+| 数据目录 | `resources\app\dev-profile.flag` → `%APPDATA%\MriteUltra-2.6.13-dev` |
+
+### 产物里装了什么（原始约 3.34GB / 60743 个文件）
+
+| 部分 | 大小 | 作用 |
+| --- | --- | --- |
+| `Mrite.exe` + DLL/pak/locales | ~265MB | Electron 主程序与运行库 |
+| `resources\app` | ~314MB | **开发版源码**（已解锁；含 claude.exe 等原生模块） |
+| `resources\assets` | ~187MB | 内置资源（图标、离线 Python wheels、Word 导出模板） |
+| `_devtools\electron` | ~268MB | 调试运行时，供 `start-dev.bat` 直接跑源码 |
+| `Mrite_env` | ~2385MB | 集成环境：Python(+科学计算包) / TinyTeX / pandoc / pwsh |
+| `tools` | ~0.4MB | 维护脚本（asar 工具、验证脚本） |
+
+> 刻意**不装** `resources\app.asar`、`app.asar.unpacked` 与两个官方归档：
+> 开发版走目录模式，原生模块在 `resources\app\node_modules` 里已有一份，
+> `claude.exe` 的候选列表也会回退到该路径（见 `task/executable.js`）。
