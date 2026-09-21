@@ -1,4 +1,4 @@
-# Mrite-dev 开发版：技术说明与构建文档（v2.6.14）
+﻿# Mrite-dev 开发版：技术说明与构建文档（v2.6.14）
 
 > 面向开发者 / 维护者。README 只写项目介绍；补丁改了哪些文件、安装包怎么构建、
 > 数据目录与调试脚本等技术细节都在本文档。
@@ -24,16 +24,44 @@
 
 ---
 
-## 二、补丁内容（6 个文件）
+## 二、补丁内容（7 个文件）
 
 | 文件 | 类型 | 作用 |
 | --- | --- | --- |
 | `patch/src/services/dev-unlock.js` | 新增 | 主进程解锁：放行授权判定 + 覆盖授权 IPC + **放行账号登录 IPC** + 关闭热更新 + 广播「已授权」 |
 | `patch/src/core/bootstrap.js` | 修改 | 在 `authService.register()` / `userService.register()` / `updaterService.register()` 之后调用 `dev-unlock.install()`；新增 `--dev-profile` 独立数据目录 |
 | `patch/src/core/update-loader.js` | 修改 | 开发版**永不加载**官方热更新包，避免解锁代码被热更覆盖；`--dev-profile` 指向 `-dev` 数据目录 |
+| `patch/src/core/backend-url.js` | 修改 | **切断与官方后台的联系**：后端地址一律返回黑洞 `http://127.0.0.1:1`；真实域名只作为拦截黑名单 |
 | `patch/src/services/task/executable.js` | 修改 | 目录模式（`resources\app`，没有 `app.asar.unpacked`）下也能找到 `claude.exe`：增加对 `app\node_modules\@anthropic-ai\...\@anthropic-ai\` 的目录扫描 |
 | `patch/renderer/dev-unlock.js` | 新增 | 渲染层解锁：**伪造常驻登录会话** + 登录遮罩/过期弹窗置空 + `_isActivated` 恒为 true |
 | `patch/renderer/index.html` | 修改 | 在**最后一个业务脚本 `index.js` 之前**引入 `dev-unlock.js` |
+
+### 🔒 网络断联（开发版不联系官方后台）
+
+原版把官方后端域名**混淆**存在 `src/core/backend-url.js` 里，运行时解码后返回，
+全应用（auth / user / updater / 任务云端代理 / system）都从这里取 base。
+开发版做了三层封锁：
+
+| 层 | 做法 | 效果 |
+| --- | --- | --- |
+| ① 地址层 | `getBackendBase()` 直接返回黑洞 `http://127.0.0.1:1` | 所有拼出来的后端 URL 都指向本机保留端口，请求立即 `ECONNREFUSED`；**没有任何数据包离开本机，也不产生 DNS 查询**。该模块在应用加载最早期生效 |
+| ② Node 出口层 | `dns.lookup` / `dns.promises.lookup` 对黑名单域名返回 `127.0.0.1`；`http/https.request/get` 命中黑名单时把目标改写到黑洞（保留协议，避免 `ERR_INVALID_PROTOCOL`） | 兜底「硬编码真实域名直连」的代码路径 |
+| ③ 渲染层 | `session.defaultSession.webRequest.onBeforeRequest` 取消 `*://mh.rzna.cloud/*`、`*://*.mh.rzna.cloud/*` 及 ws/wss 变体 | 前端 `<img>` / 链接 / fetch 也出不去 |
+
+被拦下的请求都会写一行 `[dev-unlock] [net-block] ...` 到运行日志（`userData/logs`）便于审计；
+`get-backend-url` / `fetch-announcements` / `fetch-avatars` 等通道也改为本地应答，不再发请求。
+
+**实测证据**（`tools/audit-network.ps1`、`tools/verify-netblock.js`）：
+
+```
+[net-block] 后端请求已改道本地黑洞（未离开本机）: /api/v1/events
+[net-block] 后端请求已改道本地黑洞（未离开本机）: /api/v1/my-license
+[net-block] 已拦截(dns) mh.rzna.cloud
+[net-block] 已拦截(http) mh.rzna.cloud/api/v1/ping-netblock-test
+
+观测期内对外连接：无          DNS 缓存中含 mh.rzna.cloud：无
+主动 https.get(https://mh.rzna.cloud/...) → ECONNREFUSED
+```
 
 ### ⚠ 为什么以前「去掉了遮罩却还是要登录」（2.6.14 新增账号层）
 
