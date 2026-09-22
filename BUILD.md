@@ -1,11 +1,11 @@
-﻿# Mrite-dev 开发版：技术说明与构建文档（v2.6.14）
+# Mrite-dev 开发版：技术说明与构建文档（v2.6.15）
 
 > 面向开发者 / 维护者。README 只写项目介绍；补丁改了哪些文件、安装包怎么构建、
 > 数据目录与调试脚本等技术细节都在本文档。
 
 一个**轻量补丁包**：把原版 Mrite 打包程序改造成**无登录 / 无激活码 / 无会员时长校验**的开发版。
 
-- 只含 5 个文件（3 个修改 + 2 个新增），覆盖到原版解包后的源码目录即可
+- 只含 7 个文件（5 个修改 + 2 个新增），覆盖到原版解包后的源码目录即可
 - 不改服务器、不提供任何 Key；只是把客户端侧的授权门槛放行
 - 任务仍使用「设置 → 模型配置」里**你自己的 API Key** 直连，与服务器授权无关
 
@@ -15,12 +15,13 @@
 
 | 版本 | 状态 | 补丁文件数 | 备注 |
 | --- | --- | --- | --- |
-| **Mrite 2.6.14** | ✅ 当前补丁 | 5 | 新增 `update-loader.js` 热更新防护 |
+| **Mrite 2.6.15** | ✅ 当前补丁 | 7 | 渲染层网络拦截改为 `app.whenReady()` 后安装（修复 2.6.15 上的告警） |
+| Mrite 2.6.14 | 历史版本 | 7 | 见 git 提交 `24cb7f3`，含热更新防护与网络断联 |
 | Mrite 2.6.13 | 历史版本 | 4 | 见 git 提交 `2705d52`，无热更新加载器 |
 
 判断方法：安装目录里 `Mrite.exe` 的「属性 → 详细信息 → 产品版本」，或解包后看 `package.json` 的
-`version`。本补丁按 **2.6.14** 的源码结构制作；其它版本请按同样思路手动改
-`bootstrap.js` / `update-loader.js` / `index.html`。
+`version`。本补丁按 **2.6.15** 的源码结构制作；其它版本请按同样思路手动改
+`bootstrap.js` / `update-loader.js` / `index.html` / `executable.js`。
 
 ---
 
@@ -47,6 +48,12 @@
 | ① 地址层 | `getBackendBase()` 直接返回黑洞 `http://127.0.0.1:1` | 所有拼出来的后端 URL 都指向本机保留端口，请求立即 `ECONNREFUSED`；**没有任何数据包离开本机，也不产生 DNS 查询**。该模块在应用加载最早期生效 |
 | ② Node 出口层 | `dns.lookup` / `dns.promises.lookup` 对黑名单域名返回 `127.0.0.1`；`http/https.request/get` 命中黑名单时把目标改写到黑洞（保留协议，避免 `ERR_INVALID_PROTOCOL`） | 兜底「硬编码真实域名直连」的代码路径 |
 | ③ 渲染层 | `session.defaultSession.webRequest.onBeforeRequest` 取消 `*://mh.rzna.cloud/*`、`*://*.mh.rzna.cloud/*` 及 ws/wss 变体 | 前端 `<img>` / 链接 / fetch 也出不去 |
+
+> ★ 2.6.15 修正：`install()` 是在 `bootstrap` 里、`app.whenReady()` **之前**调用的，
+> 此时取 `session.defaultSession` 会抛 `Session can only be received when app is ready`，
+> 渲染层拦截**静默装不上**（2.6.14 补丁同样存在这个隐患）。现在改成
+> `app.isReady() ? install() : app.whenReady().then(install)`，并补一行
+> `渲染层拦截已启用（app ready 后）` 日志便于确认。
 
 被拦下的请求都会写一行 `[dev-unlock] [net-block] ...` 到运行日志（`userData/logs`）便于审计；
 `get-backend-url` / `fetch-announcements` / `fetch-avatars` 等通道也改为本地应答，不再发请求。
@@ -105,6 +112,8 @@
    patch\src\services\dev-unlock.js  →  <ROOT>\resources\app\src\services\dev-unlock.js
    patch\src\core\bootstrap.js       →  <ROOT>\resources\app\src\core\bootstrap.js
    patch\src\core\update-loader.js   →  <ROOT>\resources\app\src\core\update-loader.js
+   patch\src\core\backend-url.js     →  <ROOT>\resources\app\src\core\backend-url.js
+   patch\src\services\task\executable.js → <ROOT>\resources\app\src\services\task\executable.js
    patch\renderer\dev-unlock.js      →  <ROOT>\resources\app\renderer\dev-unlock.js
    patch\renderer\index.html         →  <ROOT>\resources\app\renderer\index.html
    ```
@@ -140,7 +149,7 @@ powershell -ExecutionPolicy Bypass -File apply.ps1 -AppRoot "D:\你的Mrite安�
 ```
 
 `-AppRoot` 指向包含 `Mrite.exe` 的安装根目录。脚本会先校验解包出的 `package.json`
-版本号是否为 2.6.14，不符时给出提醒。
+版本号是否为 2.6.15，不符时给出提醒。
 
 ---
 
@@ -169,7 +178,7 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 > 生成一个带此标记的开发版安装包见第十一节。
 
 2.6.14 起 userData 被加载器**固定**为 `MriteUltra-2.6.13`（不再随版本号新建目录），
-补丁在此基础上加了 `--dev-profile` 分支指向 `-dev` 目录。
+补丁在此基础上加了 `--dev-profile` 分支指向 `-dev` 目录；2.6.15 沿用同一套目录。
 
 ---
 
@@ -190,8 +199,8 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 
 ## 八、注意事项
 
-- 本补丁只匹配 **2.6.14** 版本；其它版本请按同样思路手动改 `bootstrap.js` /
-  `update-loader.js` / `index.html`。
+- 本补丁只匹配 **2.6.15** 版本；其它版本请按同样思路手动改 `bootstrap.js` /
+  `update-loader.js` / `index.html` / `executable.js`。
 - **热更新已被关闭**（`check-for-update` / `apply-update` / `apply-local-patch` 三个
   IPC 均被覆盖，加载器也不再加载 `userData\update\app.asar`）。这是有意为之：
   否则官方热更包一旦落地，下次启动就会用正式版代码覆盖开发版。
@@ -200,12 +209,54 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
   `report-event` 均改为本地应答）；本地用量统计仍保留。
 - 账号层是**本地伪造**的常驻会话（`设置 → 账号` 会显示「开发版」，会员时长显示
   「永久有效」）。点「退出登录」不会真的退出，这是预期行为。
-- 删除两个 `dev-unlock.js` 并还原 `bootstrap.js` / `update-loader.js` / `index.html`
-  的改动，即可恢复原授权逻辑。
+- 删除两个 `dev-unlock.js` 并还原 `bootstrap.js` / `update-loader.js` /
+  `backend-url.js` / `executable.js` / `index.html` 的改动，即可恢复原授权逻辑。
+- ⚠ **`--dev` 与远程调试的关系**：原版 `bootstrap.js` 的 `applySecurity()` 带一处
+  反调试自毁 —— `if (isDev) return;` 之后的 `--inspect` / `--remote-debugging-port`
+  检测会直接 `app.quit()`（日志：`[security] Remote debugging detected, exiting`）。
+  所以**必须同时带 `--dev`** 才能用 CDP/Inspector 验证；只带
+  `--dev-profile --remote-debugging-port` 会让进程刚建完窗口就退出。
 
 ---
 
-## 九、验证记录（2026-09-20，2.6.14）
+## 九、验证记录
+
+### 2026-09-22，2.6.15（本次）
+
+在 `C:\Users\lin\AppData\Local\Programs\Mrite-Dev`（安装版开发包，`Mrite.exe` 入口，
+`--dev --dev-profile --remote-debugging-port=9333 --inspect=9334`）实测：
+
+- 启动日志：`Mrite v2.6.15 启动中...`，`Root directory: ...\MriteUltra-2.6.13-dev`
+- 主进程日志：`[dev-unlock] 开发版解锁已生效…（Mrite 2.6.15）`、`…账号层已放行…`、
+  `…热更新已关闭…`、`渲染层拦截已启用（app ready 后）`
+- 通过 CDP / Inspector 读取真实运行态（`tools/verify-dev-build.js`、
+  `verify-dev-run-gate.js`、`verify-installed-dev.js`）：
+
+  | 检查项 | 结果 |
+  | --- | --- |
+  | `Mrite.__devUnlock` / `_isActivated()` / `_isExpired()` | `true` / `true` / `false` |
+  | `Mrite.STATE.authState` / `sessionAuthorized` | `authorized` / `true` |
+  | DOM `.activation-overlay` / `.expired-popup-overlay` | 0 / 0 |
+  | `Mrite.showLogin` 仍是补丁版本（未被 `shell.js` 顶掉） | 是 |
+  | `Mrite._userToken` / `_userData` | `mrite-dev-unlock-token` / 开发版 |
+  | `await Mrite._ensureAccountLogin()`（运行按钮的账号门禁） | `true` |
+  | `_loadUser()` 后 token 是否保留 | 保留 |
+  | `user-login-status` / `user-me` IPC | `{loggedIn:true}` / `{success:true}` |
+  | 主进程 `userService.getLoginStatus()` | `{loggedIn:true, dev:true}` |
+  | `check-activation` / `get-license-status` IPC | `{valid:true}` / `{valid:true,activated:true,permanent:true}` |
+  | `verify-before-task` IPC | `{allowed:true}` |
+  | 主进程 `auth.verifySessionForOperation()` / `verifyOperation('task')` | `true` / `{allowed:true}` |
+  | `check-for-update` / `get-update-state` | 无更新（`reason: dev-unlock`，`recordedVersion: 2.6.15`） |
+  | 主进程 `userData` / `appVersion` / `isPackaged` | `...\MriteUltra-2.6.13-dev` / `2.6.15` / `true` |
+  | `claudeExe`（目录模式解析） | `...\resources\app\node_modules\@anthropic-ai\claude-agent-sdk\node_modules\@anthropic-ai\claude-agent-sdk-win32-x64\claude.exe` |
+  | `appEnvDir` / `pwsh` | `...\Mrite-Dev\Mrite_env` / `...\Mrite_env\pwsh\pwsh.exe` |
+  | 运行门禁综合判定 | `运行门禁全部通过（账号 + 激活 + 任务校验）` |
+
+- 离线校验（`.stage/verify-2615.js`，43 项全通过）：`app\` 与官方 2.6.15 归档逐文件比对，
+  **仅 5 个文件被修改 + 3 个文件新增**（`dev-profile.flag` + 两个 `dev-unlock.js`），
+  无文件缺失；7 个被改/新增的 JS 全部 `node --check` 通过；仓库 `patch\` 与实机 `app\` 逐字节一致。
+
+### 2026-09-20，2.6.14（历史）
 
 在 `D:\Mrite2.6.13` 上实测（目录模式 `electron.exe app --dev-profile --dev`，
 以及打包入口 `Mrite.exe`，两者结果一致）：
@@ -241,7 +292,7 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 
 ---
 
-## 十、配套调试脚本（在 `D:\Mrite2.6.13\tools\`）
+## 十、配套调试脚本（在 `tools\`，随安装包一起分发）
 
 | 脚本 | 用途 |
 | --- | --- |
@@ -254,42 +305,55 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 
 > 启动示例：
 > ```powershell
-> & "...\_devtools\electron\electron.exe" "...\app" --dev-profile --dev --remote-debugging-port=9333 --inspect=9334
+> & "...\Mrite.exe" --dev --dev-profile --remote-debugging-port=9333 --inspect=9334
 > ```
+> ⚠ **必须带 `--dev`**：原版 `applySecurity()` 在非 `--dev` 下检测到
+> `--inspect` / `--remote-debugging-port` 会直接退出（`[security] Remote debugging detected, exiting`），
+> 表现为「刚建完窗口就没了」。
 > ⚠ 这些脚本只做**只读**检查。**不要**去调用 `Mrite.onRun()` 做「门禁测试」——
 > 那会真的启动任务并消耗 API 额度（`window.electronAPI` 是 contextBridge 暴露的
 > 冻结对象，赋值打桩无效）。
+> ℹ 脚本里 `require('ws')` 走 `tools\node_modules`（一个指向
+> `resources\app\node_modules` 的目录联接），所以不再有写死的绝对路径。
 
 ---
 
 ## 十一、开发版安装包（Setup.exe）是怎么做的
 
-产物：`Mrite-Dev-2.6.14-Setup.exe`（约 1.5GB，NSIS 安装器 + 内嵌 7z 载荷）。
+产物：`Mrite-Dev-2.6.15-Setup.exe`（约 1.5GB，NSIS 安装器 + 内嵌 7z 载荷）。
 免管理员、可自选安装目录、可选桌面快捷方式、带卸载项。
 
-### 构建目录 `D:\Mrite2.6.13\_devtools\setup-build\`
+### 构建目录 `_devtools\setup-build\`（安装目录下）
 
 | 文件 | 说明 |
 | --- | --- |
 | `stage.ps1` | 生成载荷：程序根文件 + `resources\app`(开发源码) + `resources\assets` + `_devtools\electron` + `Mrite_env` + `tools`，并写入 `dev-profile.flag` 与安装版 `start-dev.bat` |
 | `Mrite-Dev.nsi` | NSIS 脚本（MUI2：欢迎 / 安装目录 / 组件 / 安装 / 完成 + 卸载页） |
-| `payload.7z` | 载荷压缩包（7zr `-mx=7 -mmt`，约 1.4GB） |
+| `payload.7z` | 载荷压缩包（`7za a -t7z -mx=7 -mmt=on -ms=on`，约 1.4GB） |
 | `icon.ico` | 取自 `resources\assets\icons\icon.ico` |
-| `..\nsis\bin\makensis.exe` | NSIS 3.04（来自 electron-builder-binaries） |
-| `..\nsis\7zr.exe` | 7-Zip 26.03 精简版，随安装包发布，安装时用它解包 |
+| `..\nsis\bin\makensis.exe` | NSIS 3.04（electron-builder-binaries 缓存里那份，见下） |
+| `..\nsis\7za.exe` | 7-Zip 独立版，随安装包发布，安装时用它解包 |
+
+> 本机没有现成的 `_devtools\nsis\` 工具链（安装包刻意不含它），两个工具从
+> electron-builder 缓存里取，复制成上面两个路径即可：
+> `%LOCALAPPDATA%\electron-builder\Cache\nsis-3.0.4.1\*\Bin\makensis.exe`（另需同目录
+> `Stubs` / `Include` / `Plugins` / `Contrib`，建议整个目录一起复制）、
+> `%LOCALAPPDATA%\electron-builder\Cache\7zip@1.0.0\*\bin\7za.exe`。
 
 ### 两条构建命令
 
 ```powershell
+$root = "C:\Users\lin\AppData\Local\Programs\Mrite-Dev"
+
 # 1) 载荷（在 setup-build 目录）
-$zr = "D:\Mrite2.6.13\_devtools\nsis\7zr.exe"
-Push-Location "D:\Mrite2.6.13\_devtools\setup-build\payload"
-& $zr a -t7z -mx=7 -mmt=on -ms=on "..\payload.7z" "*"
+$za = "$root\_devtools\nsis\7za.exe"
+Push-Location "$root\_devtools\setup-build\payload"
+& $za a -t7z -mx=7 -mmt=on -ms=on "..\payload.7z" "*"
 Pop-Location
 
 # 2) 编译安装包
-& "D:\Mrite2.6.13\_devtools\nsis\bin\makensis.exe" /V1 `
-  "D:\Mrite2.6.13\_devtools\setup-build\Mrite-Dev.nsi"
+& "$root\_devtools\nsis\bin\makensis.exe" /V1 `
+  "$root\_devtools\setup-build\Mrite-Dev.nsi"
 ```
 
 > `Mrite-Dev.nsi` 用 `!ifndef` 开放了 `PAYLOAD_7Z` / `OUTFILE` / `SEVENZR`，
@@ -307,9 +371,9 @@ Internal compiler error #12345: error mmapping datablock to 164525.
 （datablock 的 mmap 失败，且失败偏移每次都不同；`SetDatablockOptimize off`、
 去掉 `SetCompressorDictSize 64` 都不解决。）
 
-所以改成：**NSIS 只内嵌一个已压缩的 `payload.7z` + `7zr.exe`**（`SetCompress off`
+所以改成：**NSIS 只内嵌一个已压缩的 `payload.7z` + `7za.exe`**（`SetCompress off`
 存原始数据，datablock 里只有两个文件，编译几秒钟完成），安装时由 `nsExec` 调用
-`7zr x` 解包到 `$INSTDIR`，再删掉这两个临时文件。
+`7za x` 解包到 `$INSTDIR`，再删掉这两个临时文件。
 
 ### 安装行为
 
@@ -343,14 +407,19 @@ Internal compiler error #12345: error mmapping datablock to 164525.
 
 ```powershell
 # 装到临时目录（静默、不会创建桌面快捷方式），再带调试端口启动
-& "Mrite-Dev-2.6.14-Setup.exe" /S /D=D:\MriteDevTest
-Start-Process "D:\MriteDevTest\Mrite.exe" -ArgumentList "--dev","--remote-debugging-port=9333","--inspect=9334"
+& "Mrite-Dev-2.6.15-Setup.exe" /S /D=D:\MriteDevTest
+& "D:\MriteDevTest\Mrite.exe" --dev --dev-profile --remote-debugging-port=9333 --inspect=9334
 node tools\verify-installed-dev.js 9334   # 看 claudeExe / appEnvDir / userData / verifySessionForOperation
-node tools\verify-dev-build.js 9333       # 看界面解锁与账号状态
+node tools\verify-dev-build.js 9333        # 看界面解锁与账号状态
+node tools\verify-dev-run-gate.js 9333     # 看运行门禁三项
 ```
 
 `claudeExe` 必须解析到安装目录下的真实路径（不是 `null`），`appEnvDir` 必须是安装目录下的
 `Mrite_env`，`userData` 必须是 `%APPDATA%\MriteUltra-2.6.13-dev`。
+
+> ⚠ **别用 `Start-Process` / `start` 从自动化脚本里拉起再退出**：父进程一结束，
+> 子进程可能被一起收掉（日志只到 `app.whenReady() 触发，创建窗口...` 就断）。
+> 验证时让启动命令所在的前台进程一直活着，或者人工双击启动。
 
 ---
 
@@ -363,10 +432,10 @@ node tools\verify-dev-build.js 9333       # 看界面解锁与账号状态
 ```powershell
 # 1) 先建 draft（避免上传中断留下半个已发布版本）
 POST https://api.github.com/repos/06xxlin/Mrite-dev/releases
-     { tag_name: "v2.6.14-dev", target_commitish: "main", name: "Mrite 开发版 v2.6.14", draft: true, body: "..." }
+     { tag_name: "v2.6.15-dev", target_commitish: "main", name: "Mrite 开发版 v2.6.15", draft: true, body: "..." }
 
 # 2) 上传资产（1GB 左右，按网速可能十几分钟到几十分钟）
-POST https://uploads.github.com/repos/06xxlin/Mrite-dev/releases/<id>/assets?name=Mrite-Dev-2.6.14-Setup.exe
+POST https://uploads.github.com/repos/06xxlin/Mrite-dev/releases/<id>/assets?name=Mrite-Dev-2.6.15-Setup.exe
      Content-Type: application/octet-stream   Body: 安装包文件
 
 # 3) 转正式发布
@@ -378,3 +447,7 @@ PATCH https://api.github.com/repos/06xxlin/Mrite-dev/releases/<id>   { draft: fa
 - 仓库是 **public**，`git ls-remote` / 读 API 免鉴权；建 release 与上传资产需要带 `repo` 权限的 token。
 - 资产的**同名覆盖**：重发同一版本时先 `DELETE .../releases/assets/<asset_id>` 再上传，
   否则会得到 `already_exists`。
+
+> ⚠ **本机 git 的 schannel TLS 是坏的**（`AcquireCredentialsHandle failed: SEC_E_NO_CREDENTIALS`，
+> 所有 https 站点都这样）。git 自带的 openssl 后端不受影响，因此 clone/push 都要加：
+> `git -c http.sslBackend=openssl ...`。Node 的 https（含上传 release 资产的脚本）则是正常的。

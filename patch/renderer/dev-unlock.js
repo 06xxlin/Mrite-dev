@@ -2,15 +2,15 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // 作用：让界面永远处于「已激活 + 已登录」状态：
 //   · 不弹登录遮罩、不弹会员过期窗，面板切换不被拦
-//   · 运行任务前的「账号登录」门禁（2.6.14 新增）直接放行
+//   · 运行任务前的「账号登录」门禁（2.6.15 新增）直接放行
 //
 // 加载位置：renderer/index.html 中排在**最后一个业务脚本 index.js 之前**。
-//   ⚠ 2.6.14 把 showLogin 挪到了 core/shell.js、账号模块挪到了
+//   ⚠ 2.6.15 把 showLogin 挪到了 core/shell.js、账号模块挪到了
 //     features/settings/account-usage.js，它们都在 toolbar.js 之后加载。
 //     若本文件仍在 toolbar.js 后就插入，这些定义会把覆盖顶掉（表现为「还是要登录」）。
 //     因此改为靠后加载，并额外保留 re-assert 定时兜底。
 //
-// 适配版本：Mrite 2.6.14
+// 适配版本：Mrite 2.6.15
 // ═══════════════════════════════════════════════════════════════════════════
 (function () {
   window.Mrite = window.Mrite || {};
@@ -63,7 +63,7 @@
     };
   }
 
-  // ── 2. 账号层（2.6.14 新增）：常驻一个本地会话，运行任务不再要求登录 ──
+  // ── 2. 账号层（2.6.15 新增）：常驻一个本地会话，运行任务不再要求登录 ──
   //    账号态来源：localStorage['mrite-user-session'] + Mrite._userToken/_userData；
   //    门禁入口：Mrite._ensureAccountLogin()（toolbar 运行按钮 / 运行检测 / 重载任务）
   function ensureSession() {
@@ -110,7 +110,7 @@
     } catch (e) {}
   }
 
-  // ── 4. 统一施加（幂等；2.6.14 的模块加载顺序要求重复夺回被覆盖的定义）──
+  // ── 4. 统一施加（幂等；2.6.15 的模块加载顺序要求重复夺回被覆盖的定义）──
   function applyAll() {
     try { applyLicense(); } catch (e) {}
     try { applyAccount(); } catch (e) {}
@@ -161,5 +161,5 @@
     stripOverlays();
   }, 1500);
 
-  console.log(TAG + ' 渲染层解锁已生效：登录 / 激活遮挡全部关闭（Mrite 2.6.14）');
+  console.log(TAG + ' 渲染层解锁已生效：登录 / 激活遮挡全部关闭（Mrite 2.6.15）');
 })();

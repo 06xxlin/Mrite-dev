@@ -1,12 +1,12 @@
-﻿# apply.ps1 — 一键把原版 Mrite 2.6.14 改造成开发版
+# apply.ps1 — 一键把原版 Mrite 2.6.15 改造成开发版
 # 用法：
-#   powershell -ExecutionPolicy Bypass -File apply.ps1 -AppRoot "D:\Mrite2.6.13"
+#   powershell -ExecutionPolicy Bypass -File apply.ps1 -AppRoot "D:\你的Mrite安装目录"
 #   -AppRoot : Mrite 安装根目录（包含 Mrite.exe 与 resources\ 目录）
 param(
   [Parameter(Mandatory=$true)]
   [string]$AppRoot,
   # 期望的原版版本号；解包后版本不一致时只警告不中断（可用 -Force 跳过检查）
-  [string]$ExpectedVersion = '2.6.14',
+  [string]$ExpectedVersion = '2.6.15',
   [switch]$Force
 )
 
@@ -22,6 +22,8 @@ $patchFiles = @(
   'src\services\dev-unlock.js',
   'src\core\bootstrap.js',
   'src\core\update-loader.js',
+  'src\core\backend-url.js',
+  'src\services\task\executable.js',
   'renderer\dev-unlock.js',
   'renderer\index.html'
 )
@@ -91,4 +93,6 @@ Write-Host "  原档备份 : $bak"
 Write-Host "  现在启动 $AppRoot\Mrite.exe 即可（使用 %APPDATA%\MriteUltra-2.6.13 数据）。"
 Write-Host "  想用独立数据目录 + DevTools："
 Write-Host "    electron.exe `"$appDir`" --dev-profile --dev   → %APPDATA%\MriteUltra-2.6.13-dev"
+Write-Host "  开发版安装包（Setup.exe）额外在 app 目录里放了 dev-profile.flag，"
+Write-Host "  双击 Mrite.exe 即用 -dev 数据目录；本补丁不含该标记。"
 Write-Host "  回滚：删除 app 目录，把 app.asar.original 改回 app.asar。"

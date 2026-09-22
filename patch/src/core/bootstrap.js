@@ -509,8 +509,8 @@ async function bootstrap() {
   authService.register();
   userService.register();
   updaterService.register();
-  // ★ 开发版解锁必须排在 authService.register() / updaterService.register() 之后：
-  //   它们随后注册的同名 IPC（授权校验、热更新）会覆盖前面挂的 handler。
+  // ★ 开发版解锁必须排在 authService.register() / userService.register() / updaterService.register() 之后：
+  //   它们随后注册的同名 IPC（授权校验、账号登录、热更新）会覆盖前面挂的 handler。
   try { require('../services/dev-unlock').install(); } catch (e) { startupLog('WARN: 开发版解锁模块加载失败 — ' + (e && e.message ? e.message : e)); }
   // 热更新负载的选择/失败回滚必须早于 bootstrap，由 main.js 的稳定加载器完成。
 

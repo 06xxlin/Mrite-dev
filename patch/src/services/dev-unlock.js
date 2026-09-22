@@ -6,16 +6,16 @@
 // 调用时机：core/bootstrap.js 中，在 authService.register() / updaterService.register()
 //   之后 install()。（register() 会注册这些授权 IPC，必须先让它跑完再覆写。）
 //
-// 适配版本：Mrite 2.6.14（源码目录形态运行）
+// 适配版本：Mrite 2.6.15（源码目录形态运行）
 //
 // 关键点：权限判定走的是 authService 的「运行时属性查找」
-//   · services/task/index.js  → authService.verifySessionForOperation()（2.6.14 唯一的任务门槛）
+//   · services/task/index.js  → authService.verifySessionForOperation()（2.6.15 唯一的任务门槛）
 //   · IPC: verify-before-task / check-activation / start-task-verify / check-connection …
 // 因此覆写这些导出成员即可全局放行，业务代码本身无需改动。
-//   （2.6.14 的 auth.js 内部判定用的是模块内词法函数，不受导出覆写影响，
+//   （2.6.15 的 auth.js 内部判定用的是模块内词法函数，不受导出覆写影响，
 //     所以下面同时覆写了全部授权相关 IPC 通道。）
 //
-// ★ 2.6.14 还新增了独立的「账号登录」层（src/services/user.js）：
+// ★ 2.6.15 还新增了独立的「账号登录」层（src/services/user.js）：
 //   渲染层运行按钮会 await Mrite._ensureAccountLogin()，失败就弹「需要登录账号」并中止。
 //   本模块同时把账号相关 IPC（user-login-status / user-me / restore-user-session /
 //   oauth-login-start / user-logout）改成常驻已登录，配合渲染层的伪造会话。
@@ -180,16 +180,26 @@ function installNetworkBlock() {
   } catch (e) { note('WARN: http 拦截安装失败 - ' + (e && e.message)); }
 
   // 3) 渲染层（Chromium 网络栈）
+  // ★ 必须等 app ready 之后才能取 defaultSession —— install() 是在
+  //   bootstrap 里、app.whenReady() 之前调用的，直接取会抛
+  //   「Session can only be received when app is ready」，拦截器装不上。
+  const installRendererBlock = () => {
+    try {
+      const { session } = require('electron');
+      const patterns = [];
+      for (const h of blocked) {
+        patterns.push(`*://${h}/*`, `*://*.${h}/*`, `ws://${h}/*`, `wss://${h}/*`);
+      }
+      session.defaultSession.webRequest.onBeforeRequest({ urls: patterns }, (details, cb) => {
+        logBlock('web', String(details.url).slice(0, 120));
+        cb({ cancel: true });
+      });
+      note('渲染层拦截已启用（app ready 后）');
+    } catch (e) { note('WARN: 渲染层拦截安装失败 - ' + (e && e.message)); }
+  };
   try {
-    const { session } = require('electron');
-    const patterns = [];
-    for (const h of blocked) {
-      patterns.push(`*://${h}/*`, `*://*.${h}/*`, `ws://${h}/*`, `wss://${h}/*`);
-    }
-    session.defaultSession.webRequest.onBeforeRequest({ urls: patterns }, (details, cb) => {
-      logBlock('web', String(details.url).slice(0, 120));
-      cb({ cancel: true });
-    });
+    if (app.isReady()) installRendererBlock();
+    else app.whenReady().then(installRendererBlock).catch(function () {});
   } catch (e) { note('WARN: 渲染层拦截安装失败 - ' + (e && e.message)); }
 
   note('网络封锁已启用：官方后端 ' + blocked.join(', ') + ' 已在 DNS / HTTP / 渲染层三处拦截；'
@@ -220,7 +230,7 @@ function install() {
     broadcastAuthorized(reason);
   };
 
-// ── 3. 覆写授权相关 IPC（通道名与 2.6.14 auth.js register() 一一对应）──
+// ── 3. 覆写授权相关 IPC（通道名与 2.6.15 auth.js register() 一一对应）──
   override('verify-before-task', async () => ({ allowed: true, reason: '', serverExpiresAt: '' }));
   override('request-session', async () => ({ authorized: true, expiresAt: '', data: {}, tokenVersion: 0 }));
   override('start-task-verify', async () => ({ success: true, serverExpiresAt: '' }));
@@ -244,8 +254,8 @@ function install() {
   // ── 3.6 网络出口封锁：开发版绝不再联系官方后台 ──
   installNetworkBlock();
 
-  // ── 4. 账号登录层（2.6.14 新增）：常驻「已登录」，运行任务不再要求登录 ──
-  //    2.6.14 的运行按钮会 await Mrite._ensureAccountLogin()，失败就弹
+  // ── 4. 账号登录层（2.6.15 新增）：常驻「已登录」，运行任务不再要求登录 ──
+  //    2.6.15 的运行按钮会 await Mrite._ensureAccountLogin()，失败就弹
   //    「需要登录账号」并中止；渲染层已伪造会话，这里再把主进程侧的
   //    账号 IPC 一并放行（跨数据目录恢复会话、退出登录等路径也走同一套）。
   const loginStatus = () => ({ loggedIn: true, user: DEV_USER, token: DEV_TOKEN, dev: true });
@@ -261,7 +271,7 @@ function install() {
   override('user-logout', async () => ({ success: true, dev: true }));
   override('oauth-login-start', async () => ({ success: true, sessionToken: DEV_TOKEN, user: DEV_USER, dev: true }));
 
-  // ── 5. 关掉热更新（2.6.14 新增）：开发版源码在 resources\app 目录里，
+  // ── 5. 关掉热更新（2.6.15 新增）：开发版源码在 resources\app 目录里，
   //    一旦官方热更包落到 userData\update\app.asar，下次启动就会被它顶掉，
   //    开发版解锁随之失效。这里把更新相关 IPC 全部改成「无更新 / 拒绝安装」。
   override('check-for-update', async () => ({ success: true, updateAvailable: false, reason: 'dev-unlock' }));
@@ -275,7 +285,7 @@ function install() {
   // ── 6. 主动广播，压制 register() 内部 2s/3s 的联网校验结果 ──
   [2500, 5000, 8000, 15000].forEach((t) => setTimeout(broadcastAuthorized, t));
 
-  note('开发版解锁已生效：登录 / 激活码 / 会员时长校验全部放行（Mrite 2.6.14）');
+  note('开发版解锁已生效：登录 / 激活码 / 会员时长校验全部放行（Mrite 2.6.15）');
   note('账号层已放行：界面常驻「已登录」，运行任务不再要求登录账号');
   note('任务使用「设置 → 模型配置」中的自有 API Key 直连（不走云端代理）');
   note('热更新已关闭：官方热更包不会覆盖本开发版源码');
