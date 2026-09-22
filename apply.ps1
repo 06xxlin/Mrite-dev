@@ -24,6 +24,15 @@ $patchFiles = @(
   'src\core\update-loader.js',
   'src\core\backend-url.js',
   'src\services\task\executable.js',
+  # ★ 目录模式下内置规则库路径探测：原版只找 app.asar\rules-library，
+  #   解包成 resources\app 后永远找不到内置库 → 界面「没有模板」。必须打。
+  'src\services\rules-library.js',
+  # ★ 移除「API 常识答题」门禁（20 题全对才让连 DeepSeek 以外的模型）：
+  #   供应商随便选，端点 / 模型名 / Key 随便填；模型名一律可自由输入（预置模型只作建议）。
+  'renderer\features\settings\model-management.js',
+  'renderer\features\settings\provider-form.js',
+  'renderer\styles\result-components.css',
+  'renderer\ui\settings.html',
   'renderer\dev-unlock.js',
   'renderer\index.html'
 )
@@ -53,7 +62,7 @@ if (-not (Test-Path $appDir)) {
   Write-Host "[2/5] $appDir 已存在，跳过解包"
 }
 
-# 3) 校验版本（补丁是按 2.6.14 源码结构制作的）
+# 3) 校验版本（补丁是按 2.6.15 源码结构制作的）
 $pkgPath = Join-Path $appDir 'package.json'
 $actualVersion = ''
 if (Test-Path $pkgPath) {
@@ -64,6 +73,19 @@ if ($actualVersion -ne $ExpectedVersion -and -not $Force) {
   Write-Host "[警告] 版本与补丁适配版本不一致，bootstrap.js / update-loader.js / index.html 结构可能不同。" -ForegroundColor Yellow
   Write-Host "       确认要继续请加 -Force 重新运行。" -ForegroundColor Yellow
   exit 2
+}
+
+# 3.5) 解包后 rules-library 必须落在 resources\app\rules-library（内置模板来自这里）
+$libDir = Join-Path $appDir 'rules-library'
+if (Test-Path $libDir) {
+  $tpl = Join-Path $libDir 'templates.json'
+  $tplCount = 0
+  if (Test-Path $tpl) {
+    try { $tplCount = @((Get-Content $tpl -Raw -Encoding UTF8 | ConvertFrom-Json).templates).Count } catch {}
+  }
+  Write-Host "[3.5/5] 内置规则库: $libDir（模板 $tplCount 个）"
+} else {
+  Write-Host "[警告] 解包后找不到 $libDir —— 模板列表会是空的，请确认原版安装包的 app.asar 内含 rules-library。" -ForegroundColor Yellow
 }
 
 # 4) 覆盖补丁

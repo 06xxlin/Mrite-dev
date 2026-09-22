@@ -5,9 +5,14 @@
 
 一个**轻量补丁包**：把原版 Mrite 打包程序改造成**无登录 / 无激活码 / 无会员时长校验**的开发版。
 
-- 只含 7 个文件（5 个修改 + 2 个新增），覆盖到原版解包后的源码目录即可
+- 只含 12 个文件（10 个修改 + 2 个新增 + `dev-profile.flag`），覆盖到原版解包后的源码目录即可
 - 不改服务器、不提供任何 Key；只是把客户端侧的授权门槛放行
 - 任务仍使用「设置 → 模型配置」里**你自己的 API Key** 直连，与服务器授权无关
+- `rules-library.js` 那处补丁只修「目录模式下找不到内置模板库」，**与授权无关**，
+  但目录模式安装包**必须打**，否则界面里没有任何模板
+- `model-management.js` / `provider-form.js` / `settings.html` / `result-components.css`
+  这 4 处是**移除「API 常识答题」门禁**（原来 20 题全对才让连 DeepSeek 以外的模型），
+  与授权无关，纯 UX
 
 ---
 
@@ -15,17 +20,18 @@
 
 | 版本 | 状态 | 补丁文件数 | 备注 |
 | --- | --- | --- | --- |
-| **Mrite 2.6.15** | ✅ 当前补丁 | 7 | 渲染层网络拦截改为 `app.whenReady()` 后安装（修复 2.6.15 上的告警） |
+| **Mrite 2.6.15** | ✅ 当前补丁 | 12 | + `rules-library.js`：修复目录模式「没有模板」（模板全部随包内置，从不联网获取）；+ 4 个渲染层文件：移除「API 常识答题」门禁，模型随便选、随便填 |
 | Mrite 2.6.14 | 历史版本 | 7 | 见 git 提交 `24cb7f3`，含热更新防护与网络断联 |
 | Mrite 2.6.13 | 历史版本 | 4 | 见 git 提交 `2705d52`，无热更新加载器 |
 
 判断方法：安装目录里 `Mrite.exe` 的「属性 → 详细信息 → 产品版本」，或解包后看 `package.json` 的
 `version`。本补丁按 **2.6.15** 的源码结构制作；其它版本请按同样思路手动改
-`bootstrap.js` / `update-loader.js` / `index.html` / `executable.js`。
+`bootstrap.js` / `update-loader.js` / `index.html` / `executable.js` / `rules-library.js` /
+`renderer/features/settings/model-management.js` / `renderer/features/settings/provider-form.js`。
 
 ---
 
-## 二、补丁内容（7 个文件）
+## 二、补丁内容（12 个文件）
 
 | 文件 | 类型 | 作用 |
 | --- | --- | --- |
@@ -34,8 +40,33 @@
 | `patch/src/core/update-loader.js` | 修改 | 开发版**永不加载**官方热更新包，避免解锁代码被热更覆盖；`--dev-profile` 指向 `-dev` 数据目录 |
 | `patch/src/core/backend-url.js` | 修改 | **切断与官方后台的联系**：后端地址一律返回黑洞 `http://127.0.0.1:1`；真实域名只作为拦截黑名单 |
 | `patch/src/services/task/executable.js` | 修改 | 目录模式（`resources\app`，没有 `app.asar.unpacked`）下也能找到 `claude.exe`：增加对 `app\node_modules\@anthropic-ai\...\@anthropic-ai\` 的目录扫描 |
+| `patch/src/services/rules-library.js` | 修改 | **目录模式下也能找到内置模板库**：`ensureLibraries()` 原来只探测 `app.asar\rules-library`，目录模式（开发版安装包）两个候选都不存在 → 模板列表为空。新增多候选探测 + 命中日志 + 缺失告警 |
+| `patch/renderer/features/settings/model-management.js` | 修改 | **删除「API 报错诊断答题」整套门禁**（15 固定题 + 29 常识题库 + 答题弹窗 + 连接前确认框）；保留 `_apiQuizPassed`(恒 true) / `_applyApiQuizLock`(空) / `_showApiQuiz`(直接回调 passed) 空实现 |
+| `patch/renderer/features/settings/provider-form.js` | 修改 | 供应商选择不再拦截；`_ensureModelSelect()` 由只读下拉/只读输入改为**可编辑输入框 + `<datalist>` 建议**；端点框不再 `readOnly`（预填但可改） |
+| `patch/renderer/ui/settings.html` | 修改 | 删掉 `#btnApiQuiz`「答题解锁配置权限」按钮；模型名标签改为「模型名称（可自由填写）」；小白指引第 1 条改为「想接哪个模型都行」 |
+| `patch/renderer/styles/result-components.css` | 修改 | 删掉答题相关死样式（`.api-quiz-*` / `.btn-quiz-unlock` / `.provider-card.locked`） |
 | `patch/renderer/dev-unlock.js` | 新增 | 渲染层解锁：**伪造常驻登录会话** + 登录遮罩/过期弹窗置空 + `_isActivated` 恒为 true |
 | `patch/renderer/index.html` | 修改 | 在**最后一个业务脚本 `index.js` 之前**引入 `dev-unlock.js` |
+
+### 📦 模板从哪来（为什么「切后台」不会让模板消失）
+
+模板**不是服务器下发的**：官方 15 个比赛模板一直随包内置在 `resources\app\rules-library\`
+（82 个文件：各比赛主 `.tex`、12 章变体、`format.cls`、3 个中文字体、模板说明、两个求解方案）。
+首次启动由 `rulesLibrary.ensureLibraries()` 种进 `%APPDATA%\MriteUltra-2.6.13-dev\rules-library`，
+界面读其中的 `templates.json`。所以「没有模板」只可能是**种库这一步没跑成**，
+和 `backend-url.js` 的黑洞改造无关（黑洞只影响登录 / 激活 / 会员 / 热更新 / 事件上报）。
+
+目录模式下原版探测顺序里没有 `resources\app\rules-library` 这一条 —— 这就是根因。
+修复后的探测顺序（权威优先）：
+
+1. `resources\app.asar\rules-library`（官方原版）
+2. `resources\app.asar.unpacked\rules-library`
+3. **`resources\app\rules-library`**（开发版安装包 / 解包后的目录模式）
+4. `%MRITE_REAL_RESOURCES%` 下的同三种
+5. `app.getAppPath()\rules-library`、`__dirname\..\..\rules-library` 兜底
+
+配套校验：`tools/verify-rules-seed.js`（34 项断言，两个场景）、
+`tools/seed-rules-library.js`（就地补种，不重装也能让模板回来）。
 
 ### 🔒 网络断联（开发版不联系官方后台）
 
@@ -114,9 +145,22 @@
    patch\src\core\update-loader.js   →  <ROOT>\resources\app\src\core\update-loader.js
    patch\src\core\backend-url.js     →  <ROOT>\resources\app\src\core\backend-url.js
    patch\src\services\task\executable.js → <ROOT>\resources\app\src\services\task\executable.js
+   patch\src\services\rules-library.js   → <ROOT>\resources\app\src\services\rules-library.js
+   patch\renderer\features\settings\model-management.js → <ROOT>\resources\app\renderer\features\settings\model-management.js
+   patch\renderer\features\settings\provider-form.js    → <ROOT>\resources\app\renderer\features\settings\provider-form.js
+   patch\renderer\styles\result-components.css          → <ROOT>\resources\app\renderer\styles\result-components.css
+   patch\renderer\ui\settings.html       → <ROOT>\resources\app\renderer\ui\settings.html
    patch\renderer\dev-unlock.js      →  <ROOT>\resources\app\renderer\dev-unlock.js
    patch\renderer\index.html         →  <ROOT>\resources\app\renderer\index.html
    ```
+
+   > `rules-library.js` 这一条不能省：解包成目录模式后，原版只会去 `app.asar\rules-library`
+   > 找内置模板库，找不到就**界面里一个模板都没有**。打完补丁后首次启动会自动把
+   > `<ROOT>\resources\app\rules-library`（15 个比赛模板）种进
+   > `%APPDATA%\MriteUltra-2.6.13-dev\rules-library`。
+   >
+   > 4 个 `renderer\...` 文件是把「API 常识答题」门禁拆掉，与授权无关；漏打只会让
+   > 用户仍然被 20 题测验拦住，不影响其它功能。
 
 3. **补齐原生模块**（`better-sqlite3` / `sharp` / `mrite-core` / `claude.exe` 原本在
    `app.asar.unpacked` 里，目录模式运行必须让它们出现在 `app` 目录下）：
@@ -200,7 +244,9 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 ## 八、注意事项
 
 - 本补丁只匹配 **2.6.15** 版本；其它版本请按同样思路手动改 `bootstrap.js` /
-  `update-loader.js` / `index.html` / `executable.js`。
+  `update-loader.js` / `index.html` / `executable.js` / `rules-library.js`。
+  > `rules-library.js` 的改动很小且向后兼容：只是给 `ensureLibraries()` 多加了几个候选路径
+  > 与日志，旧版本里这个函数结构相同，可照抄。
 - **热更新已被关闭**（`check-for-update` / `apply-update` / `apply-local-patch` 三个
   IPC 均被覆盖，加载器也不再加载 `userData\update\app.asar`）。这是有意为之：
   否则官方热更包一旦落地，下次启动就会用正式版代码覆盖开发版。
@@ -210,7 +256,8 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 - 账号层是**本地伪造**的常驻会话（`设置 → 账号` 会显示「开发版」，会员时长显示
   「永久有效」）。点「退出登录」不会真的退出，这是预期行为。
 - 删除两个 `dev-unlock.js` 并还原 `bootstrap.js` / `update-loader.js` /
-  `backend-url.js` / `executable.js` / `index.html` 的改动，即可恢复原授权逻辑。
+  `backend-url.js` / `executable.js` / `rules-library.js` / `index.html` 的改动，
+  即可恢复原授权逻辑。
 - ⚠ **`--dev` 与远程调试的关系**：原版 `bootstrap.js` 的 `applySecurity()` 带一处
   反调试自毁 —— `if (isDev) return;` 之后的 `--inspect` / `--remote-debugging-port`
   检测会直接 `app.quit()`（日志：`[security] Remote debugging detected, exiting`）。
@@ -255,6 +302,116 @@ Rename-Item "<ROOT>\resources\app.asar.original" "<ROOT>\resources\app.asar"
 - 离线校验（`.stage/verify-2615.js`，43 项全通过）：`app\` 与官方 2.6.15 归档逐文件比对，
   **仅 5 个文件被修改 + 3 个文件新增**（`dev-profile.flag` + 两个 `dev-unlock.js`），
   无文件缺失；7 个被改/新增的 JS 全部 `node --check` 通过；仓库 `patch\` 与实机 `app\` 逐字节一致。
+
+### 2026-09-22（第二次改造）修复「软件里没有模板」
+
+**现象**：装完开发版，模板选择、「我的模板」全空。
+
+**官方模板从哪来（实证）**：拿官方 2.6.15 安装包（`C:\Users\lin\Downloads\Mrite2.6.15`）核对 ——
+官方 `resources\` 下只有 `app.asar`(67.6MB) + `app.asar.unpacked` + `assets`，**没有**
+`resources\rules-library`；用 asar 列归档内容，模板在 **asar 内部**：
+
+```
+\rules-library
+\rules-library\common\主引导.md
+\rules-library\descriptions\高教社杯.md
+\rules-library\paper\system\cls\format.cls
+\rules-library\paper\system\fonts\SourceHanSerifCN-Regular.otf
+\rules-library\paper\system\main\高教社杯.tex        ← 15 个比赛主文件
+\rules-library\paper\system\main\华为杯\figures\*.pdf
+\rules-library\paper\system\sections\...            ← 12 个章节变体
+\rules-library\templates.json
+（共 137 个条目，含目录）
+```
+
+所以官方的链路是：**随包内置在 app.asar → 首启由 `ensureLibraries()` 种进 userData → 界面读
+`userData\rules-library\templates.json`**。全程不联网，服务器只负责登录 / 激活 / 会员 / 热更新。
+原版探测的第一个候选 `process.resourcesPath\app.asar\rules-library` 正是官方包的位置。
+
+**开发版为什么没有**：开发版安装包是**目录模式**（`resources\app` 真实目录，为省 ~250MB 不带
+`app.asar`），两个候选都不存在 → `src` 为空 → 播种整段被 `if (src)` 跳过 → 数据目录里只剩
+`mkdirSync` 建出的空壳（实测：`%APPDATA%\MriteUltra-2.6.13-dev\rules-library` 仅 4 个残留文件、
+无 `templates.json`、`paper\system\main` 为空）。
+
+**是不是内容缺失？不是 —— 已逐字节核对**：
+
+```
+node .stage\extract-official-rules.js   # 抽官方 app.asar\rules-library → .stage\official-rules
+node .stage\compare-rules.js            # 官方 82 文件 vs 开发版 82 文件：0 缺失 / 0 多余 / 0 内容不同
+node .stage\compare-app.js              # 全量：官方 asar(除 node_modules) 526 文件 vs 开发版 529 文件
+                                        #   缺失 0；新增 3（两个 dev-unlock.js + dev-profile.flag）
+                                        #   修改 6（bootstrap / update-loader / backend-url /
+                                        #          executable / rules-library / index.html）
+```
+
+即：开发版内置的模板**就是官方 2.6.15 那一份**，无需移植；缺的只是「种进数据目录」这一步。
+
+**修复**：`resolveBundledRulesDir()` 多候选探测（asar → asar.unpacked → **`resources\app`**
+→ `MRITE_REAL_RESOURCES` 的同三种 → `getAppPath()` / `__dirname` 兜底），命中即打印来源，
+全落空时打印全部候选路径而不是静默。
+
+**验证**（`tools/verify-rules-seed.js`，用假 `electron` 模块把安装目录当打包态跑真实
+`ensureLibraries()`，覆盖「全新安装」与「升级自被污染的旧数据目录」两个场景）：
+
+| 检查项 | 结果 |
+| --- | --- |
+| 断言总数 | **34 通过 / 0 失败** |
+| 内置库来源 | `…\resources\app\rules-library`（目录模式候选命中） |
+| `templates.json` 模板数 / `paper\system\main` 比赛数 | 15 / 15 |
+| 模板主文件可解析 / 说明文档非空 | 15/15 / 15/15 |
+| 章节变体 / `format.cls` / 中文字体 | 12 个 / 就位 / 3 个 |
+| 求解方案 | `Mrite内置`、`Mrite2.6.13` |
+| `listTemplates()` | 15 个，无 `solveMissing` / `paperMissing` |
+| 旧数据目录场景：旧内置残留被清、内置文件被当前包覆盖 | 是 |
+
+真实数据目录就地补种（`tools/seed-rules-library.js`）：83 个文件、15 个模板、
+2 个求解方案、12 个章节；旧版残留目录（`common\公共求解规则` 等）已清。
+
+> ⚠ **工具链坑**：本机系统 Node 是 v24.9.0，在 Windows 上对**非 ASCII 目录**执行
+> `fs.rmSync(dir, { recursive: true, force: true })` 会**直接崩进程**（exit `0xC0000409`，
+> 不抛 JS 异常），而应用自身是 Electron 33.4.11 的 Node 20.18.3（同一调用正常）。
+> 两个 `tools` 脚本因此内建自举：检测到系统 Node ≥22 时自动用
+> `_devtools\electron\electron.exe`（`ELECTRON_RUN_AS_NODE=1`）重跑。
+> 注意 Electron 下 `process.resourcesPath` 是只读访问器，脚本用 `Object.defineProperty` 覆盖。
+
+### 2026-09-23（第三次改造）移除「API 常识答题」门禁，模型自由选择
+
+**需求**：不要那套答题门槛，模型想接哪个接哪个。
+
+**原版行为**：`renderer/features/settings/model-management.js` 里有一整套
+「API 报错诊断答题」——15 道固定报错题（400/401/402/…/529，每题为「原因 + 责任方」两问）
++ 29 道常识题库随机抽 5 题，每题限时 20 秒，**20/20 全对**才写
+`localStorage['mrite-api-quiz-passed']='1'`。未通过时 `_applyApiQuizLock()` 会把
+供应商卡片置灰（`.provider-card.locked`）并把
+`inputApiBase` / `inputApiModel` / `inputApiKey` / `inputApiFormat` 全部 `disabled`；
+点非 DeepSeek 卡片还会弹「连接其他模型」确认框引导去答题。
+
+**改动**（4 个渲染层文件，见第二节表格）：
+
+- 整体删除题库 / 答题弹窗 / 连接前确认框；`_navToSection` 进入「模型配置」不再触发任何东西
+- 保留 4 个同名空实现（`_apiQuizPassed`→true、`_applyApiQuizLock`→空、`_onEnterApiConfig`→空、
+  `_showApiQuiz`→直接 `finished(true)`），老调用点不会报错
+- `_selectProvider()` 里的拦截删掉 → 任何供应商一点即选
+- **模型名一律自由填写**：`_ensureModelSelect()` 不再把 DeepSeek 的模型框换成只读下拉，
+  统一渲染成 `<input list="apiModelSuggestions">` + `<datalist>`（预置模型只作建议，
+  且只放该供应商自己的模型）；端点框去掉 `readOnly`（有官方地址就预填，但可改）
+
+**验证**（`--dev --multi-instance --remote-debugging-port=9335`，CDP 读真实运行态）：
+
+| 检查项 | 结果 |
+| --- | --- |
+| `#btnApiQuiz` / `.api-quiz-opts` / `.btn-quiz-unlock` | `null` / 0 / 0 |
+| `Mrite._apiQuizPassed()` | `true` |
+| 连调 `_applyApiQuizLock()` 后四个输入框 | 全部 `enabled` |
+| 直选 Kimi（原需答题） | 选中成功，无答题遮罩；端点 `https://api.moonshot.cn/v1`、`readOnly=false`；模型框 `INPUT`、可编辑 |
+| DeepSeek 的模型建议列表 | 仅 `deepseek-v4-pro` / `-flash` / `-flash-vision-exp` |
+| 手填 `gpt-5.1-custom` | 输入即写回 `settings.apiModel` |
+| 模板回归（同实例） | `listTemplates()` → 15 个，首个 `高教社杯` |
+| 全新数据目录（`-collab-dev`）自动种库 | 83 文件 + `templates.json`（顺带回归了模板修复） |
+
+**补丁集重新生成**：`.stage/gen-patch-2615.js` 已扩到 12 个文件（新增第 8~12 段），
+生成物与实机 `resources\app`、仓库 `.mrrepo\patch` 三者逐字节一致；补丁生成器新增
+`cutRange()`（整段替换，锚点缺失/不唯一即报错），保证换官方版本时不会静默改错地方。
 
 ### 2026-09-20，2.6.14（历史）
 
@@ -385,6 +542,21 @@ Internal compiler error #12345: error mmapping datablock to 164525.
 | 卸载项 | `HKCU\...\Uninstall\MriteDev`，控制面板「应用」里可卸载；卸载时询问是否删除用户数据（默认保留） |
 | 路径保护 | 安装目录 > 90 字符 或含非英文字符时弹窗警告（Mrite 的 Python/LaTeX 在中文或过深路径下会失效） |
 | 数据目录 | `resources\app\dev-profile.flag` → `%APPDATA%\MriteUltra-2.6.13-dev` |
+
+#### ⚠ 卸载逻辑的两个坑（2026-09-22 实测踩到并修复）
+
+1. **静默卸载会无声删掉用户数据**。原来写的是
+   `MessageBox MB_ICONQUESTION|MB_YESNO "是否删除用户数据？" IDNO keep`——静默（`/S`）时
+   NSIS 会把 MessageBox 当成按下**第一个**按钮 =「是」，于是 `RMDir /r` 直接执行。
+   现在：静默模式一律**保留**用户数据，只有交互式卸载才询问，且用
+   `MB_DEFBUTTON2` 把默认按钮设为「否」。
+2. **判断静默不能用 `${GetOptions}`**。命令恰好只有 `/S`（没有别的参数）时
+   `${GetOptions} $R "$/S" $v` 返回的 `$v` 是**空字符串**，`$v != ""` 恒为假 →
+   逻辑落回「交互式」分支 → 又踩回第 1 条。改成直接看命令头两个字符是否为 `/S`。
+3. **`Uninstall.exe` 自删**：运行中的 `Uninstall.exe` 被占用，`Delete "$INSTDIR\Uninstall.exe"`
+   必然失败，结果是卸载后残留一个只含 `Uninstall.exe` 的空目录。改成
+   `Exec 'cmd.exe /C ping 127.0.0.1 -n 3 >nul & del /F /Q "$INSTDIR\Uninstall.exe" & rd /Q "$INSTDIR"'`
+   —— 分离进程等本进程退出后再删（注意卸载段里要用 `$INSTDIR`，不要用 `$EXEDIR`）。
 
 ### 产物里装了什么（原始约 3.34GB / 60743 个文件）
 

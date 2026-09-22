@@ -1,0 +1,657 @@
+    <div id="settingsPanel" class="panel flex-1 min-h-0 flex flex-col overflow-hidden" style="padding:12px 16px 16px">
+      <div class="flex gap-0 flex-1 min-h-0" style="position:relative;background:#fff;border-radius:14px;border:1px solid #e7e3dc;box-shadow:0 1px 3px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.04);overflow:hidden">
+        <div class="set-nav-col">
+          <div class="set-nav-group"><span class="set-nav-group-line"></span>账号</div>
+          <div class="set-nav-item active" data-section="profile" onclick="Mrite._navToSection(this,'profile');setTimeout(function(){if(Mrite._accountRestore){Mrite._accountRestore()}else{Mrite._renderAccount()}},100)">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>用户信息</span>
+          </div>
+          <div class="set-nav-item" data-section="usage" onclick="Mrite._navToSection(this,'usage');setTimeout(function(){Mrite.renderUsageStats()},100)">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>用量统计</span>
+          </div>
+          <div class="set-nav-group"><span class="set-nav-group-line"></span>赛题设置</div>
+          <div class="set-nav-item" data-section="project" onclick="Mrite._navToSection(this,'project')">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>赛题模板</span>
+          </div>
+          <div class="set-nav-item" data-section="contest" onclick="Mrite._navToSection(this,'contest')">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>求解配置</span>
+          </div>
+          <div class="set-nav-group"><span class="set-nav-group-line"></span>系统设置</div>
+          <div class="set-nav-item" data-section="theme" onclick="Mrite._navToSection(this,'theme');setTimeout(function(){Mrite._renderThemeConfig()},100)">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+            <span>主题配置</span>
+          </div>
+          <div class="set-nav-item" data-section="env" onclick="Mrite._navToSection(this,'env');setTimeout(function(){Mrite._renderEnvConfig()},100)">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+            <span>环境配置</span>
+          </div>
+          <div class="set-nav-item" data-section="system" onclick="Mrite._navToSection(this,'system')">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+            <span>模型配置</span>
+          </div>
+          <div class="set-nav-item" data-section="app" onclick="Mrite._navToSection(this,'app');setTimeout(function(){Mrite._updateRefresh();Mrite._renderAppRelated()},100)">
+            <svg class="set-nav-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>应用相关</span>
+          </div>
+          <div class="flex-1"></div>
+          <div class="set-nav-about">
+            <img src="../assets/icons/icon_128.png" width="50" height="50" class="set-nav-logo" alt="Mrite">
+            <div class="set-nav-about-text">
+              <p class="set-nav-app-name">Mrite</p>
+              <p class="set-nav-app-ver"></p>
+            </div>
+          </div>
+        </div>
+        <div id="settingsContent" class="set-content-col">
+          <!-- 主题配置 -->
+          <div class="set-section-panel" data-section="theme">
+            <h3 class="set-panel-title">主题配置</h3>
+            <p class="set-panel-desc">选择软件的主题风格，点击立即生效并自动保存，下次启动保持。</p>
+            <div id="themeList" class="theme-grid"></div>
+
+            <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--color-zinc-100)">
+              <div style="font-size:13px;font-weight:700;color:var(--color-zinc-800);margin-bottom:4px">进度条配色</div>
+              <div style="font-size:11px;color:var(--color-zinc-400);margin-bottom:12px">独立于主题单独设置，不会随主题切换而变。</div>
+              <div id="progressBandList" class="theme-grid"></div>
+            </div>
+          </div>
+
+          <!-- 环境配置：集成环境 + LaTeX + Python 三张卡片（库/宏包安装已迁移到 Mrite_env 面板） -->
+          <div class="set-section-panel" data-section="env">
+            <h3 class="set-panel-title">环境配置</h3>
+
+            <!-- ★ 二选一模式切换：集成环境 或 写作 + 求解（分环境），切换会丢弃另一模式配置并需确认 -->
+            <div class="env-mode-toggle" id="envModeToggle">
+              <div class="env-mode-opt env-mode-opt--integrated active" id="envModeOptIntegrated" onclick="Mrite._envSetMode('integrated')">集成环境</div>
+              <div class="env-mode-opt env-mode-opt--separate" id="envModeOptSeparate" onclick="Mrite._envSetMode('separate')">系统环境</div>
+            </div>
+
+            <!-- 🧭 小白指引 -->
+            <div class="api-guide" style="margin-bottom:12px">
+              <div class="api-guide-head">🧭 小白必看（环境配置）</div>
+              <div class="api-guide-row"><span class="api-guide-num">1</span><span>环境来源<b>二选一</b>：<b>集成环境（Mrite_env）</b>或<b>系统环境</b>。切换会丢弃另一模式的配置，需确认后生效。</span></div>
+              <div class="api-guide-row"><span class="api-guide-num">2</span><span><b>集成环境</b>：软件自动找到电脑上的 Mrite_env 并加载其中的 Python 与 TinyTeX，开箱即用，找不到才回退内置 / 手动路径。</span></div>
+              <div class="api-guide-row"><span class="api-guide-num">3</span><span><b>系统环境</b>：分别指定电脑里已装的<b>系统 LaTeX</b>（写作）与<b>系统 Python</b>（求解），并检测其<b>必需库 / 宏包</b>是否齐全——缺失可一键安装，或回退集成环境。</span></div>
+              <div class="api-guide-row"><span class="api-guide-num">4</span><span>想<b>装更多库 / 宏包</b>？打开软件同级目录 <b>Mrite_env</b> 下的「状态面板」（Python 库 / TeX 宏包）在里面装。</span></div>
+            </div>
+
+            <!-- ★ 集成环境容器（默认显示）：集成环境卡片 -->
+            <div class="env-mode-build env-mode-integrated">
+            <!-- 集成环境（Mrite_env）→ 大标题栏可展开/收起（默认收起） -->
+            <div class="env-card collapsed">
+              <div class="env-card-head" onclick="Mrite._envToggleCard(this)">
+                <span class="env-card-icon env-icon-appenv"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+                <div class="env-card-title">
+                  <div class="env-card-name">集成环境 · Mrite_env</div>
+                  <div class="env-card-sub" id="envIntegCardStatus">检测中...</div>
+                </div>
+                <span class="env-card-chevron"></span>
+              </div>
+              <div class="env-card-body">
+                <!-- 对接状态 -->
+                <div class="env-sub-box">
+                  <div class="env-sub-title">对接状态</div>
+                  <div id="envIntegInfo" style="font-size:12px;color:#71717a;line-height:1.9">检测中...</div>
+                </div>
+                <!-- 指定目录（可选）：环境放任意位置时手动指定一次 -->
+                <div class="env-sub-box">
+                  <div class="env-sub-title">指定目录（可选）</div>
+                  <div style="font-size:12px;color:#71717a;line-height:1.8">软件会自动检测常见位置（软件同级/上级、各盘根、桌面/文档/下载）的 Mrite_env；若环境放在其他位置，可在这里浏览选择一次，之后每次启动都会优先使用。</div>
+                  <div style="display:flex;gap:8px;margin-top:8px">
+                    <input id="integAppEnvPath" type="text" class="set-input" readonly placeholder="未指定（使用自动检测）" style="flex:1">
+                    <button class="set-btn" onclick="Mrite._integBrowseAppEnv()">浏览选择</button>
+                    <button class="set-btn" onclick="Mrite._integClearAppEnv()">清除</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+            <!-- ★ 系统环境容器（默认隐藏，切到该模式才显示） -->
+            <div class="env-mode-build env-mode-separate" style="display:none">
+            <!-- 写作环境（LaTeX）→ 大标题栏可展开/收起（默认收起） -->
+            <div class="env-card collapsed">
+              <div class="env-card-head" onclick="Mrite._envToggleCard(this)">
+                <span class="env-card-icon env-icon-latex"><img src="../assets/icons/latex.svg" width="28" height="28" alt="LaTeX"></span>
+                <div class="env-card-title">
+                  <div class="env-card-name">写作环境 · LaTeX</div>
+                  <div class="env-card-sub" id="envLatexCardStatus">检测中...</div>
+                </div>
+                <span class="env-card-chevron"></span>
+              </div>
+              <div class="env-card-body">
+                <!-- 容器1：环境引擎（系统路径检测 + 手动指定） -->
+                <div class="env-sub-box">
+                  <div class="env-sub-title">系统路径（可选）</div>
+                  <div style="font-size:12px;color:#71717a;line-height:1.7;margin-bottom:8px">仅当不使用上方「集成环境」、想调用电脑里已安装的系统 LaTeX 时才需配置；留空将自动使用集成环境。</div>
+                  <div class="env-mode-row">
+                    <input id="envLatexPath" type="text" class="set-input" placeholder="粘贴系统 LaTeX / xelatex 路径" oninput="Mrite._autoSaveSettings()" style="flex:1">
+                    <button class="set-btn set-btn-primary" onclick="Mrite._envLatexScan()">检测</button>
+                  </div>
+                  <div id="envLatexEnvList" class="env-env-list" style="display:none"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 求解环境（Python）→ 大标题栏可展开/收起（默认收起） -->
+            <div class="env-card collapsed">
+              <div class="env-card-head" onclick="Mrite._envToggleCard(this)">
+                <span class="env-card-icon env-icon-python"><svg width="28" height="28" viewBox="0 0 24 24" fill="#3776AB"><path d="M14.25.18l.9.2.73.26.59.3.45.32.34.34.25.34.16.33.1.3.04.26.02.2-.01.13V8.5l-.05.63-.13.55-.21.46-.26.38-.3.31-.33.25-.35.19-.35.14-.33.1-.3.07-.26.04-.21.02H8.77l-.69.05-.59.14-.5.22-.41.27-.33.32-.27.35-.2.36-.15.37-.1.35-.07.32-.04.27-.02.21v3.06H3.17l-.21-.03-.28-.07-.32-.12-.35-.18-.36-.26-.36-.36-.35-.46-.32-.59-.28-.73-.21-.88-.14-1.05-.05-1.23.06-1.22.16-1.04.24-.87.32-.71.36-.57.4-.44.42-.33.42-.24.4-.16.36-.1.32-.05.24-.01h.16l.06.01h8.16v-.83H6.18l-.01-2.75-.02-.37.05-.34.11-.31.17-.28.25-.26.31-.23.38-.2.44-.18.51-.15.58-.12.64-.1.71-.06.77-.04.84-.02 1.27.05zm-6.3 1.98l-.23.33-.08.41.08.41.23.34.33.22.41.09.41-.09.33-.22.23-.34.08-.41-.08-.41-.23-.33-.33-.22-.41-.09-.41.09zm13.09 3.95l.28.06.32.12.35.18.36.27.36.35.35.47.32.59.28.73.21.88.14 1.04.05 1.23-.06 1.23-.16 1.04-.24.86-.32.71-.36.57-.4.45-.42.33-.42.24-.4.16-.36.09-.32.05-.24.02-.16-.01h-8.22v.82h5.84l.01 2.76.02.36-.05.34-.11.31-.17.29-.25.25-.31.24-.38.2-.44.17-.51.15-.58.13-.64.09-.71.07-.77.04-.84.01-1.27-.04-1.07-.14-.9-.2-.73-.25-.59-.3-.45-.33-.34-.34-.25-.34-.16-.33-.1-.3-.04-.25-.02-.2.01-.13v-5.34l.05-.64.13-.54.21-.46.26-.38.3-.32.33-.24.35-.2.35-.14.33-.1.3-.06.26-.04.21-.02.13-.01h5.84l.69-.05.59-.14.5-.21.41-.28.33-.32.27-.35.2-.36.15-.36.1-.35.07-.32.04-.28.02-.21V6.07h2.09l.14.01zm-6.47 14.25l-.23.33-.08.41.08.41.23.33.33.23.41.08.41-.08.33-.23.23-.33.08-.41-.08-.41-.23-.33-.33-.23-.41-.08-.41.08z"/></svg></span>
+                <div class="env-card-title">
+                  <div class="env-card-name">求解环境 · Python</div>
+                  <div class="env-card-sub" id="envPythonCardStatus">检测中...</div>
+                </div>
+                <span class="env-card-chevron"></span>
+              </div>
+              <div class="env-card-body">
+                <!-- 容器1：环境引擎（系统路径检测 + 手动指定） -->
+                <div class="env-sub-box">
+                  <div class="env-sub-title">系统路径（可选）</div>
+                  <div style="font-size:12px;color:#71717a;line-height:1.7;margin-bottom:8px">仅当不使用上方「集成环境」、想调用电脑里已安装的系统 Python 时才需配置；留空将自动使用集成环境。</div>
+                  <div class="env-mode-row">
+                    <input id="envPythonPath" type="text" class="set-input" placeholder="粘贴系统 python.exe 路径" oninput="Mrite._autoSaveSettings()" style="flex:1">
+                    <button class="set-btn set-btn-primary" onclick="Mrite._envPythonScan()">检测</button>
+                  </div>
+                  <div id="envPythonEnvList" class="env-env-list" style="display:none"></div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <div class="set-section-panel" data-section="system">
+            <h3 class="set-panel-title">模型配置</h3>
+
+            <!-- 当前 API 配置 hero 卡片 -->
+            <div class="api-hero" id="apiHeroCard">
+              <div class="api-hero-left">
+                <img id="apiHeroIcon" src="../assets/icons/providers/custom.svg" class="api-hero-icon" onerror="this.src='../assets/icons/providers/custom.svg'">
+                <div class="api-hero-info">
+                  <div class="api-hero-model" id="apiHeroModel">未配置</div>
+                  <div class="api-hero-meta" id="apiHeroMeta">请在下方选择服务商并配置 API</div>
+                </div>
+              </div>
+              <div class="api-hero-right">
+                <span class="api-hero-status" id="apiHeroStatus">未连接</span>
+              </div>
+            </div>
+
+            <div class="sys-block">
+              <div class="sys-block-header" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <span>API 配置</span>
+                <span style="font-size:11px;color:var(--color-zinc-400)">模型随便选、端点与模型名都能自由填写（无答题门禁）</span>
+              </div>
+
+              <!-- 供应商卡片网格：第一行国产 + 自定义，第二行国外 -->
+              <div class="provider-grid" id="providerGrid">
+                <!-- 第一行：国产模型 + 自定义 -->
+                <div class="provider-card" data-provider="deepseek" onclick="Mrite._selectProvider('deepseek')">
+                  <span class="provider-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18v-4h3l4-9 4 6 4-5 3 7v5H3z"/></svg>推荐</span>
+                  <img src="../assets/icons/providers/deepseek.ico" class="provider-icon" alt="DeepSeek">
+                  <span class="provider-name">DeepSeek</span>
+                </div>
+                <div class="provider-card" data-provider="xiaomi" onclick="Mrite._selectProvider('xiaomi')">
+                  <img src="../assets/icons/providers/xiaomi.png" class="provider-icon" alt="小米">
+                  <span class="provider-name">小米 MiMo</span>
+                </div>
+                <div class="provider-card" data-provider="glm" onclick="Mrite._selectProvider('glm')">
+                  <img src="../assets/icons/providers/glm.png" class="provider-icon" alt="智谱 GLM">
+                  <span class="provider-name">智谱 GLM</span>
+                </div>
+                <div class="provider-card" data-provider="kimi" onclick="Mrite._selectProvider('kimi')">
+                  <img src="../assets/icons/providers/moonshot.ico" class="provider-icon" alt="Kimi">
+                  <span class="provider-name">Kimi</span>
+                </div>
+                <div class="provider-card" data-provider="qwen" onclick="Mrite._selectProvider('qwen')">
+                  <img src="../assets/icons/providers/qwen.png" class="provider-icon" alt="阿里 千问">
+                  <span class="provider-name">阿里 千问</span>
+                </div>
+                <!-- 第二行：国外模型 + 自定义 -->
+                <div class="provider-card" data-provider="anthropic" onclick="Mrite._selectProvider('anthropic')">
+                  <img src="../assets/icons/providers/anthropic.png" class="provider-icon" alt="Claude">
+                  <span class="provider-name">Claude</span>
+                </div>
+                <div class="provider-card" data-provider="openai" onclick="Mrite._selectProvider('openai')">
+                  <img src="../assets/icons/providers/openai.ico" class="provider-icon" alt="OpenAI">
+                  <span class="provider-name">OpenAI</span>
+                </div>
+                <div class="provider-card" data-provider="xai" onclick="Mrite._selectProvider('xai')">
+                  <img src="../assets/icons/providers/xai.ico" class="provider-icon" alt="Grok">
+                  <span class="provider-name">Grok</span>
+                </div>
+                <div class="provider-card" data-provider="gemini" onclick="Mrite._selectProvider('gemini')">
+                  <img src="../assets/icons/providers/gemini.png" class="provider-icon" alt="Gemini">
+                  <span class="provider-name">Gemini</span>
+                </div>
+                <div class="provider-card" data-provider="custom" onclick="Mrite._selectProvider('custom')">
+                  <span class="provider-icon provider-icon-custom">⚙</span>
+                  <span class="provider-name">自定义</span>
+                </div>
+              </div>
+
+              <!-- API 配置表单 -->
+              <div class="api-detail-form" id="apiDetailForm">
+                <div class="api-form-row">
+                  <div class="set-fields" style="flex:1">
+                    <label>API 端点（Base URL）</label>
+                    <input id="inputApiBase" type="text" class="set-input" placeholder="例如 https://api.deepseek.com" oninput="Mrite._autoSaveSettings()">
+                  </div>
+                  <div class="set-fields" style="flex:1">
+                    <label>模型名称（可自由填写）</label>
+                    <input id="inputApiModel" type="text" class="set-input" placeholder="直接填服务商官方模型 ID，也可以从建议里选" oninput="Mrite._autoSaveSettings()">
+                  </div>
+                  <div class="set-fields" style="flex:0 0 190px">
+                    <label>接口形式</label>
+                    <select id="inputApiFormat" class="set-input" onchange="Mrite._autoSaveSettings()">
+                      <option value="auto">自动识别</option>
+                      <option value="responses">Responses API（新版）</option>
+                      <option value="chat">Chat Completions（兼容）</option>
+                      <option value="anthropic">Anthropic Messages</option>
+                    </select>
+                  </div>
+                </div>
+                <p class="api-format-hint">服务商文档写 <code>/responses</code> 时选“Responses API”；写 <code>/chat/completions</code> 时选“Chat Completions”。旧配置无需修改。</p>
+                <div class="api-guide">
+                  <div class="api-guide-head">🧭 小白指引（务必先看，能少走很多弯路）</div>
+                  <div class="api-guide-row"><span class="api-guide-num">0</span><span>如果你什么都不懂，<b>直接用 DeepSeek 就好</b>：端点已自动填好，只需在下方粘贴你的 API Key 就能用。</span></div>
+                  <div class="api-guide-row"><span class="api-guide-num">1</span><span><b>想接哪个模型都行</b>：官方直连、第三方中转、自建网关都可以填。中转/自建服务的地址格式常不标准（有的写 <code>/v1</code>，有的写 <code>/anthropic</code>），连不上先怀疑「端点」和「模型名」。</span></div>
+                  <div class="api-guide-row"><span class="api-guide-num">2</span><span><b>模型名不能乱写</b>：必须填服务商官方提供的模型 ID（在其官网文档里能查到准确名称）。乱写会直接报错「模型不存在」。</span></div>
+                  <div class="api-guide-row"><span class="api-guide-num">3</span><span><b>API Key</b>：在服务商控制台「API Keys」页面创建，以 <code>sk-</code> 开头。Key 属于敏感信息，别泄露给他人。</span></div>
+                  <div class="api-guide-row"><span class="api-guide-num">4</span><span>全部填好后点「<b>保存配置</b>」，再回到任务页点「<b>测试</b>」，显示绿勾就说明配置成功了。</span></div>
+                </div>
+                <div class="api-form-row">
+                  <div class="set-fields" style="flex:1">
+                    <label>API Key</label>
+                    <div style="display:flex;gap:8px">
+                      <input id="inputApiKey" type="password" class="set-input" style="flex:1" placeholder="粘贴你的 API Key" oninput="Mrite._autoSaveSettings()">
+                      <button class="api-save-btn" id="apiSaveBtn" onclick="Mrite._saveCurrentApiConfig()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        保存配置
+                      </button>
+                    </div>
+                    <p class="api-key-hint" id="apiKeyHint" style="display:none">
+                      还没有 Key？点击 <a href="#" id="apiKeyLoginLink" target="_blank">登录控制台</a> 注册账号并创建 API Key，具体步骤请查看 <a href="#" id="apiKeyDocLink" target="_blank">API 文档</a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 已保存的配置 -->
+            <div class="sys-block">
+              <div class="sys-block-header">已保存的配置</div>
+              <div class="saved-models-list" id="savedModelsList">
+                <div class="saved-models-empty">填写配置后点击「保存配置」添加</div>
+              </div>
+            </div>
+          </div>
+          <div class="set-section-panel" data-section="project">
+            <h3 class="set-panel-title">赛题模板</h3>
+            <div class="tpl-box">
+              <!-- 顶部工具条：右上角「模板新建」进入做模板界面（做模板界面内不再提供「返回选择」，避免往返切换后视图状态错乱）。 -->
+              <div class="tpl-hero">
+                <span class="tpl-hero-title" id="tplToolbarTitle"><span class="tpl-hero-label">当前模板：</span><b class="tpl-hero-value">—</b></span>
+                <button id="tplNewEntryBtn" class="tpl-new-btn" onclick="Mrite._tplShowMaker()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                  模板新建
+                </button>
+              </div>
+
+              <!-- ★ 视图1：选模板界面（默认显示）—— 左侧模板列表 + 当前配置，右侧预览。 -->
+              <div id="tplSelectorView" class="tpl-body">
+                <div class="tpl-col tpl-col-left">
+                  <div id="tplListView">
+                    <div id="tplListHeader" class="tpl-list-head">
+                      <span class="tpl-list-title">模板列表</span>
+                      <span id="tplListCount" class="tpl-list-count">0</span>
+                      <span class="tpl-list-head-spacer"></span>
+                      <button class="tpl-refresh-btn" onclick="Mrite._tplLoadTemplates()" title="刷新模板列表">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                      </button>
+                    </div>
+                    <div id="tplList" class="tpl-scroll"></div>
+                  </div>
+                  <div id="tplSelCurrentConfig" class="tpl-current-config">
+                    <div class="tpl-current-config-head">模板配置</div>
+                    <div class="tpl-current-config-row"><span>求解规则</span><b id="tplSelCfgSolve">—</b></div>
+                    <div class="tpl-current-config-row"><span>模板格式</span><b id="tplSelCfgPaper">—</b></div>
+                  </div>
+                </div>
+                <div class="tpl-col tpl-col-right">
+                  <div class="tpl-preview-frame">
+                    <!-- ★ 模板介绍/预览：默认占位提示，选中模板后渲染其说明文档 -->
+                    <div class="tpl-preview-head">
+                      <span class="tpl-preview-title">比赛介绍</span>
+                    </div>
+                    <div class="tpl-preview-body">
+                      <div id="tplPreviewPlaceholder" class="tpl-reserved">
+                        <div class="tpl-reserved-icon">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                        </div>
+                        <div class="tpl-reserved-title">选择左侧模板查看说明</div>
+                        <div class="tpl-reserved-sub">点击模板列表项即可预览模板说明</div>
+                      </div>
+                      <div id="tplPreviewMdWrap" class="tpl-preview-body--md" style="display:none">
+                        <div id="tplPreviewMd" class="tpl-md"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ★ 视图2：做模板界面（默认隐藏）—— 左栏 = 带标题栏的完整容器（名称/求解规则/模板格式 + 保存）；右栏 = 带标题栏的编辑器容器 + 右上角三段滑动开关。 -->
+              <div id="tplMakerView" class="tpl-body" style="display:none">
+                <!-- 左栏：一个完整的「模板配置」容器，含标题栏 + 三个模块 + 大量提示文字 + 操作按钮 -->
+                <div class="tpl-col tpl-col-left">
+                  <div class="tpl-maker-panel">
+                    <div class="tpl-maker-head">
+                      <span class="tpl-maker-title">模板配置</span>
+                      <button class="tpl-maker-back-btn" onclick="Mrite._tplShowSelector()" title="返回选择模板">返回选择</button>
+                    </div>
+                    <div class="tpl-maker-body">
+                      <div class="tpl-maker-guide">
+                        <div class="tpl-maker-guide-text">模板配置由「模板名称 ＋ 求解规则 ＋ 模板格式」三部分组合而成：先为这份模板<em>起个名字</em>，再在下拉列表中选择<em>求解阶段要调用的规则</em>，同时挑选论文最终的<em>排版格式</em>。三者都选好后，点击下方「保存」即可生成一套完整的模板，之后在模板列表里就能直接选用。</div>
+                      </div>
+                      <!-- 模块1：模板名称 -->
+                      <div class="tpl-module">
+                        <div class="tpl-module-head">
+                          <span class="tpl-module-title"><i class="tpl-module-n">1</i>模板名称</span>
+                        </div>
+                        <div class="tpl-module-body">
+                          <input id="tplNameInput" class="tpl-name-input" placeholder="例如：国赛、美赛" maxlength="7" />
+                          <div class="tpl-module-tip">为模板组合命名，便于识别，最多 7 个字。</div>
+                        </div>
+                      </div>
+                      <!-- 模块2：求解规则 -->
+                      <div class="tpl-module">
+                        <div class="tpl-module-head">
+                          <span class="tpl-module-title"><i class="tpl-module-n">2</i>求解规则</span>
+                          <button class="tpl-module-new-btn" onclick="Mrite._tplNew('solve')">新建</button>
+                        </div>
+                        <div class="tpl-module-body">
+                          <div id="tplSolveSlot" class="tpl-dd-slot"></div>
+                          <div class="tpl-module-tip">选择求解阶段调用的规则。</div>
+                        </div>
+                      </div>
+                      <!-- 模块3：模板格式 -->
+                      <div class="tpl-module">
+                        <div class="tpl-module-head">
+                          <span class="tpl-module-title"><i class="tpl-module-n">3</i>模板格式</span>
+                          <button class="tpl-module-new-btn" onclick="Mrite._tplNew('paper')">新建</button>
+                        </div>
+                        <div class="tpl-module-body">
+                          <div id="tplPaperSlot" class="tpl-dd-slot"></div>
+                          <div class="tpl-module-tip">选择论文的排版格式。</div>
+                        </div>
+                      </div>
+                      <!-- 操作按钮 -->
+                      <div class="tpl-left-actions">
+                        <button class="tpl-left-btn tpl-save-btn" onclick="Mrite._tplSave()">保存</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 右栏：一个完整的「模板编辑器」容器，含标题栏 + 右上角三段滑动开关 -->
+                <div class="tpl-col tpl-col-right">
+                  <div class="tpl-editor-frame">
+                    <div class="tpl-editor-head">
+                      <span class="tpl-editor-title" id="tplEditorTitle">求解规则</span>
+                      <!-- 右上角图标按钮：返回 / 新建文件夹 / 新建文件 / 保存（去掉「下载」，新建类保留） -->
+                      <div class="tpl-editor-head-actions">
+                        <button class="tpl-ico-btn" onclick="Mrite._tplEditorBack()" title="返回（不再编辑）">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                        </button>
+                        <button class="tpl-ico-btn" id="tplEditorHeadNewFolder" onclick="Mrite._tplCreateFolder()" title="新建文件夹">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+                        </button>
+                        <button class="tpl-ico-btn" id="tplEditorHeadNewFile" onclick="Mrite._tplCreateFile()" title="新建文件">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        </button>
+                        <button class="tpl-ico-btn tpl-ico-btn--primary" id="tplEditorHeadSave" onclick="Mrite._tplEditorHeadSave()" title="保存">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        </button>
+                        <button class="tpl-ico-btn" id="tplEditorHeadDl" onclick="Mrite._tplEditorDownload()" title="下载：打包当前规则（含全部文件）为 zip">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div class="tpl-editor-main">
+                      <!-- ★ 文件展示区（默认视图）：上=自建求解规则，下=自建模板，平分整个右栏 -->
+                      <div id="tplFileArea" class="tpl-file-area">
+                        <div class="tpl-file-half">
+                          <div class="tpl-file-half-head">
+                            <span class="tpl-file-half-title">求解规则</span>
+                            <span class="tpl-file-half-count" id="tplSolveCount">0</span>
+                            <span class="tpl-file-half-spacer"></span>
+                            <span class="tpl-file-filter">
+                              <button class="tpl-filter-btn tpl-filter-btn--active" data-filter="user" id="tplSolveFilterUser" onclick="Mrite._tplSetListFilter('solve','user')">用户</button>
+                              <button class="tpl-filter-btn" data-filter="system" id="tplSolveFilterSys" onclick="Mrite._tplSetListFilter('solve','system')">系统</button>
+                            </span>
+                          </div>
+                          <div id="tplSolveCards" class="tpl-file-list"></div>
+                        </div>
+                        <div class="tpl-file-half">
+                          <div class="tpl-file-half-head">
+                            <span class="tpl-file-half-title">模板</span>
+                            <span class="tpl-file-half-count" id="tplPaperCount">0</span>
+                            <span class="tpl-file-half-spacer"></span>
+                            <span class="tpl-file-filter">
+                              <button class="tpl-filter-btn tpl-filter-btn--active" data-filter="user" id="tplPaperFilterUser" onclick="Mrite._tplSetListFilter('paper','user')">用户</button>
+                              <button class="tpl-filter-btn" data-filter="system" id="tplPaperFilterSys" onclick="Mrite._tplSetListFilter('paper','system')">系统</button>
+                            </span>
+                          </div>
+                          <div id="tplPaperCards" class="tpl-file-list"></div>
+                        </div>
+                      </div>
+                      <!-- 默认提示：未点左栏「新建」时显示 -->
+                      <div id="tplEditorHint" class="tpl-editor-hint" style="display:none">
+                        <div class="tpl-reserved">
+                          <div class="tpl-reserved-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                          </div>
+                          <div class="tpl-reserved-title">在左侧选择「求解规则」或「模板格式」</div>
+                          <div class="tpl-reserved-sub">点击「新建」后在此编辑规则文件，可拖入文件夹或新建 Markdown 文件。</div>
+                        </div>
+                      </div>
+                      <!-- 编辑器态：顶部工作目录栏（药丸=当前规则名 · 逐层文件夹）+ 下方内容区（文件浏览 / 纯文本编辑，不做 Markdown 渲染） -->
+                      <div id="tplEditorBody" class="tpl-editor" style="display:none">
+                        <div class="tpl-path-bar">
+                          <div class="tpl-breadcrumb" id="tplBreadcrumb"></div>
+                        </div>
+                        <div class="tpl-editor-content">
+                          <div id="tplExplorer" class="tpl-explorer"></div>
+                          <div id="tplMdEditor" class="tpl-md-editor" style="display:none"></div>
+                        </div>
+                      </div>
+                      <!-- ★ v2.7 拼接模式：模板格式编辑器（与求解规则编辑器完全独立）
+                           标题栏(左=返回，右=下载/保存) + 上·拼接区(下钻式横向滑动列：章节→内容块→子内容块)
+                           + 下·内容预览(独立容器，有间隔，纯展示无按钮) -->
+                      <div id="tplPaperComposer" class="tpl-paper-composer" style="display:none">
+                        <div class="tpl-composer-titlebar">
+                          <button class="tpl-ico-btn" onclick="Mrite._tplPaperLeave()" title="返回（不再编辑）">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                          </button>
+                          <span class="tpl-composer-bar-title">模板格式编辑</span>
+                          <span class="tpl-composer-bar-spacer"></span>
+                          <button id="tplComposerDlBtn" class="tpl-composer-tool-btn" onclick="Mrite._tplPaperDownloadZip()" title="下载：把当前模板（封面+cls+字体+各章，按顺序）聚合后打包为 zip">下载</button>
+                          <button id="tplComposerSaveBtn" class="tpl-composer-tool-btn tpl-composer-tool-btn--primary" onclick="Mrite._tplPaperSave()" title="保存这套模板组成">保存</button>
+                        </div>
+                        <!-- 上·拼接区：下钻式横向滑动列（章节→内容块→子内容块；往右钻、章节列滑出；←→ 可左右滑） -->
+                        <div class="tpl-composer-picker">
+                          <div id="tplDrillCols" class="tpl-drill-cols"></div>
+                        </div>
+                        <!-- 下·内容预览（独立容器、有间隔；左=文件结构树，右=模板&规范编辑） -->
+                        <div class="tpl-composer-preview">
+                          <!-- ★ 左·文件结构：展示当前拼接模板的文件树，随「选新模板/切章节/选变体/拖顺序」实时刷新 -->
+                          <div id="tplPaperFileTree" class="tpl-ftree">
+                            <div class="tpl-composer-col-head">
+                              <span>文件结构</span><span class="tpl-composer-bar-spacer"></span>
+                            </div>
+                            <div id="tplPaperFileTreeList" class="tpl-ftree-list"></div>
+                          </div>
+                          <!-- 右·模板&规范编辑（原内容预览） -->
+                          <div class="tpl-preview-edit">
+                            <div class="tpl-composer-col-head">
+                              <span>模板&规范编辑</span><span class="tpl-composer-bar-spacer"></span>
+                            </div>
+                            <div id="tplPreviewEmpty" class="tpl-preview-empty" style="display:none">
+                              <span>暂无打开对应的 tex 文件</span>
+                            </div>
+                            <textarea id="tplPreviewCode" class="tpl-preview-code" spellcheck="false" style="display:none"></textarea>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <select id="projectSelect" class="hidden"></select>
+          </div>
+          <div class="set-section-panel" data-section="contest">
+            <h3 class="set-panel-title">求解配置</h3>
+            <p class="set-panel-desc">开启开关后，对应信息将在求解时自动注入提示词并写入论文封面。</p>
+            <div class="cfg-card">
+              <div class="cfg-card-head">队伍信息</div>
+              <div class="cfg-list">
+                <div class="cfg-row">
+                  <span class="cfg-label">队伍编号</span>
+                  <input id="inputTeamCode" type="text" placeholder="例如 MC25001" class="cfg-input" oninput="Mrite._autoSaveSettings('solve')">
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleTeamCode" onchange="Mrite._onSolveToggle('teamCode')"><span></span></label>
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-label">组　　别</span>
+                  <input id="inputGroup" type="text" placeholder="例如 本科组 / 研究生组 / 其他" class="cfg-input" oninput="Mrite._autoSaveSettings('solve')">
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleGroup" onchange="Mrite._onSolveToggle('group')"><span></span></label>
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-label">题　　号</span>
+                  <input id="inputProblemNumber" type="text" placeholder="例如 A、B、C" class="cfg-input" oninput="Mrite._autoSaveSettings('solve')">
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleProblemNum" onchange="Mrite._onSolveToggle('problemNumber')"><span></span></label>
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-label">学校名称</span>
+                  <input id="inputSchool" type="text" placeholder="例如 清华大学" class="cfg-input" oninput="Mrite._autoSaveSettings('solve')">
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleSchool" onchange="Mrite._onSolveToggle('school')"><span></span></label>
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-label">队　　员</span>
+                  <!-- 队员三格：分别对应研赛（华为杯）封面上的三个队员位 \membera/b/c{}，不能再合成一格写 -->
+                  <div class="cfg-member-boxes">
+                    <input id="inputMember1" type="text" placeholder="队员一" class="cfg-input" oninput="Mrite._taskConfigSetMember('member1',this.value)">
+                    <input id="inputMember2" type="text" placeholder="队员二" class="cfg-input" oninput="Mrite._taskConfigSetMember('member2',this.value)">
+                    <input id="inputMember3" type="text" placeholder="队员三" class="cfg-input" oninput="Mrite._taskConfigSetMember('member3',this.value)">
+                  </div>
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleMembers" onchange="Mrite._onSolveToggle('members')"><span></span></label>
+                </div>
+                <div class="cfg-row">
+                  <span class="cfg-label">指导老师</span>
+                  <input id="inputAdvisor" type="text" placeholder="例如 阮老师" class="cfg-input" oninput="Mrite._autoSaveSettings('solve')">
+                  <label class="cfg-toggle"><input type="checkbox" id="toggleAdvisor" onchange="Mrite._onSolveToggle('advisor')"><span></span></label>
+                </div>
+              </div>
+            </div>
+            <div class="cfg-card">
+              <div class="cfg-card-head">写作语言</div>
+              <div class="cfg-lang-row">
+                <div class="cfg-lang-opt active" data-lang="zh" onclick="Mrite._switchLang(this,'zh')">中文写作</div>
+                <div class="cfg-lang-opt" data-lang="en" onclick="Mrite._switchLang(this,'en')">English Writing</div>
+              </div>
+            </div>
+            <div class="cfg-card">
+              <div class="cfg-card-head"><span>生成风格 <span class="cfg-beta-tag">Beta</span></span><label class="cfg-toggle"><input type="checkbox" id="toggleStyle" onchange="Mrite._onSolveToggle('style')"><span></span></label></div>
+              <textarea id="inputStylePrompt" placeholder="自定义论文风格提示词，如「使用简洁学术风格」「多用图表少用公式」等…" class="cfg-textarea" maxlength="100" oninput="Mrite._autoSaveSettings('solve')"></textarea>
+              <div class="cfg-style-hint"><span>实验室功能 · 可能产生负优化 · 限100字</span></div>
+            </div>
+            <div class="cfg-card">
+              <div class="cfg-card-head"><span>颜色配置 <span class="cfg-beta-tag">内测</span></span></div>
+              <div class="qc-grid">
+                <div class="qc-item"><span class="qc-label">配色</span>
+                  <div class="cfg-palette-row" role="radiogroup" aria-label="颜色配置（暂未开放）">
+                    <button type="button" class="cfg-palette-chip" data-palette="academic" role="radio" aria-checked="false" disabled onclick="Mrite._taskConfigSetPalette('academic')">学术经典</button>
+                    <button type="button" class="cfg-palette-chip" data-palette="modern" role="radio" aria-checked="false" disabled onclick="Mrite._taskConfigSetPalette('modern')">现代简约</button>
+                    <button type="button" class="cfg-palette-chip" data-palette="contrast" role="radio" aria-checked="false" disabled onclick="Mrite._taskConfigSetPalette('contrast')">高对比度</button>
+                    <button type="button" class="cfg-palette-chip" data-palette="soft" role="radio" aria-checked="false" disabled onclick="Mrite._taskConfigSetPalette('soft')">柔和配色</button>
+                  </div>
+                </div>
+              </div>
+              <div class="qc-hint">暂时未开放 · 暂未接入生成，选中只做记录</div>
+            </div>
+            <div class="cfg-card">
+              <div class="cfg-card-head"><span>量化约束</span><label class="cfg-toggle"><input type="checkbox" id="toggleQuant" onchange="Mrite._onSolveToggle('quant')"><span></span></label></div>
+              <div class="qc-grid">
+                <div class="qc-item"><span class="qc-label">页数</span><div class="qc-range"><input id="inputQuantPagesMin" type="number" class="qc-num" placeholder="最少" min="1" max="200" oninput="Mrite._autoSaveSettings('solve')"><span class="qc-dash">–</span><input id="inputQuantPagesMax" type="number" class="qc-num" placeholder="最多" min="1" max="200" oninput="Mrite._autoSaveSettings('solve')"></div></div>
+                <div class="qc-item"><span class="qc-label">图片</span><div class="qc-range"><input id="inputQuantImagesMin" type="number" class="qc-num" placeholder="最少" min="0" max="200" oninput="Mrite._autoSaveSettings('solve')"><span class="qc-dash">–</span><input id="inputQuantImagesMax" type="number" class="qc-num" placeholder="最多" min="0" max="200" oninput="Mrite._autoSaveSettings('solve')"></div></div>
+                <div class="qc-item"><span class="qc-label">公式</span><div class="qc-range"><input id="inputQuantFormulasMin" type="number" class="qc-num" placeholder="最少" min="0" max="300" oninput="Mrite._autoSaveSettings('solve')"><span class="qc-dash">–</span><input id="inputQuantFormulasMax" type="number" class="qc-num" placeholder="最多" min="0" max="300" oninput="Mrite._autoSaveSettings('solve')"></div></div>
+                <div class="qc-item"><span class="qc-label">表格</span><div class="qc-range"><input id="inputQuantTablesMin" type="number" class="qc-num" placeholder="最少" min="0" max="100" oninput="Mrite._autoSaveSettings('solve')"><span class="qc-dash">–</span><input id="inputQuantTablesMax" type="number" class="qc-num" placeholder="最多" min="0" max="100" oninput="Mrite._autoSaveSettings('solve')"></div></div>
+              </div>
+              <div class="qc-hint">留空则沿用比赛模板默认要求 · 左为最小值 · 右为最大值</div>
+            </div>
+          </div>
+          <div class="set-section-panel active" data-section="profile">
+            <h3 class="set-panel-title">账号信息</h3>
+            <div id="accountContent" style="width:100%;"></div>
+          </div>
+          <div class="set-section-panel" data-section="usage">
+            <h3 class="set-panel-title">用量统计</h3>
+            <div id="usageDashboard"><div class="ud-empty">暂无使用记录</div></div>
+          </div>
+          <div class="set-section-panel" data-section="app">
+            <h3 class="set-panel-title">应用相关</h3>
+            <p class="set-panel-desc">使用条款、诊断日志与软件更新。</p>
+
+            <!-- 使用条款 / 许可：分段卡片 -->
+            <div class="sys-block">
+              <div class="sys-block-header">使用条款与许可</div>
+              <div class="terms-box">
+                <div class="terms-lead">Mrite 是一支数模论文辅助工具，<b class="c-good">全程公开使用</b>。使用前请阅读以下说明：</div>
+                <div class="terms-item terms-item-good"><span class="terms-num">✓</span><span><b class="c-good">小白开箱即用</b>：针对小白同学提供<b>基础环境配置课程</b>与指引，用内置环境即可，无需自己折腾。</span></div>
+                <div class="terms-item terms-item-good"><span class="terms-num">✓</span><span><b class="c-blue">极客自由定制</b>：技术大佬 / 极客可自行配置本机环境、上传自己的规则模板，自由度很高。</span></div>
+                <div class="terms-item"><span><b class="c-blue">使用许可</b>：登录账号后授权使用；账号仅限本人使用，请勿转售或共享。</span></div>
+                <div class="terms-item"><span><b class="c-warn">生成内容责任</b>：由本软件生成的论文、数据与分析结果，其学术规范性与合规性由使用者自行负责。</span></div>
+                <div class="terms-item"><span><b class="c-warn">请勿违规使用</b>：不得用于商业牟利或违反所在院校学术规范的行为。</span></div>
+                <div class="terms-item"><span><b class="c-blue">隐私与数据</b>：任务与日志仅用于功能服务与问题排查；联网只发往你自行配置的 API 服务。</span></div>
+                <div class="terms-item"><span><b class="c-warn">免责声明</b>：软件按"现状"提供，不保证特定用途的适用性；因使用软件造成的损失，本软件不承担相应责任。</span></div>
+                <div class="terms-item"><span><b class="c-blue">更新与服务</b>：通过公告推送软件更新与服务通知，条款以最新版本为准。</span></div>
+                <div class="terms-note">继续使用本软件即视为同意上述条款。如有疑问，请联系官方支持。</div>
+              </div>
+            </div>
+
+            <!-- 诊断日志 -->
+            <div class="sys-block">
+              <div class="sys-block-header">诊断日志</div>
+              <div class="log-box">
+                <div class="log-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                <div class="log-info">
+                  <div class="log-title">导出运行日志</div>
+                  <div class="log-desc">将软件运行日志打包导出，用于问题排查。遇到异常时提供给客服，能更快定位问题。</div>
+                </div>
+                <button id="btnExportLogs" class="set-btn set-btn-primary" onclick="Mrite._exportLogs()">导出日志</button>
+              </div>
+            </div>
+
+            <!-- 软件更新 -->
+            <div class="sys-block">
+              <div class="sys-block-header">软件更新</div>
+              <div class="upd-box">
+                <span class="upd-ver-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg></span>
+                <div class="upd-ver-info">
+                  <div class="upd-ver" id="inputUpdateVersion">--</div>
+                  <div class="upd-ver-label">当前版本 · 可检查更新 / 本地上传补丁</div>
+                </div>
+                <div class="upd-side-actions">
+                  <button id="btnCheckUpdate" class="set-btn" onclick="Mrite._updateCheck()">检查软件更新</button>
+                  <button id="btnApplyUpdate" class="set-btn set-btn-primary" style="display:none" onclick="Mrite._updateApply()">立即更新</button>
+                  <button class="set-btn" onclick="Mrite._updateLocalPatch()">本地上传补丁</button>
+                </div>
+              </div>
+              <div id="updateStatus" class="upd-status"></div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>

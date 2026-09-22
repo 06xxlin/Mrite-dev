@@ -468,7 +468,8 @@ async function bootstrap() {
     startupLog('协作资源目录规则: <项目>/共享文件区；成员缓存: workspace/_collab');
   } catch (e) { startupLog('WARN: 迁移旧协作共享目录失败: ' + e.message); }
 
-  // 8.5 规则库就绪（打包态从内置 app.asar/rules-library 种入 userData；dev 直接用项目根 rules-library/）
+  // 8.5 规则库就绪（打包态从内置 rules-library 种入 userData：目录模式取 resources\app\rules-library，
+  //     asar 模式取 resources\app.asar\rules-library；dev 直接用项目根 rules-library/）
   //     必须在 resolveCurrentTemplate 之前执行：旧版规则库会被清空重种，避免据此解析出已失效的模板。
   try { if (rulesLib) rulesLib.ensureLibraries(); } catch (e) { startupLog('WARN: 规则库初始化失败 — ' + (e && e.message ? e.message : e)); }
   // 8. 初始化当前模板名（基于已就绪/已重置的规则库重新解析，回退到首个可用模板）
