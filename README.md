@@ -84,5 +84,5 @@ Windows 10 / 11 64 位，安装后约占用 3.5GB 磁盘空间。
 请勿用于商业用途；如果觉得原版软件对你有帮助，请支持正版。
 
 ## 欢迎加入
-<img width="1305" height="2321" alt="bd7c2d58d1cc3a5c2f98f3c44f4ac701" src="https://github.com/user-attachments/assets/0feb991b-d439-4d4d-ad6c-41dc3398a52b" />
+<img width="130" height="230" alt="bd7c2d58d1cc3a5c2f98f3c44f4ac701" src="https://github.com/user-attachments/assets/0feb991b-d439-4d4d-ad6c-41dc3398a52b" />
 
