@@ -5,7 +5,7 @@
 
 一个**轻量补丁包**：把原版 Mrite 打包程序改造成**无登录 / 无激活码 / 无会员时长校验**的开发版。
 
-- 只含 12 个文件（10 个修改 + 2 个新增 + `dev-profile.flag`），覆盖到原版解包后的源码目录即可
+- 只含 14 个文件（12 个修改 + 2 个新增 + `dev-profile.flag`），覆盖到原版解包后的源码目录即可
 - 不改服务器、不提供任何 Key；只是把客户端侧的授权门槛放行
 - 任务仍使用「设置 → 模型配置」里**你自己的 API Key** 直连，与服务器授权无关
 - `rules-library.js` 那处补丁只修「目录模式下找不到内置模板库」，**与授权无关**，
@@ -13,6 +13,8 @@
 - `model-management.js` / `provider-form.js` / `settings.html` / `result-components.css`
   这 4 处是**移除「API 常识答题」门禁**（原来 20 题全对才让连 DeepSeek 以外的模型），
   与授权无关，纯 UX
+- `src/ipc/system.js` / `renderer/shared/run-detect.js` 这 2 处让运行前预检的「网络」项
+  在开发版里显示「已跳过」而不是失败 —— 否则「确认运行」按钮永久置灰，**任务根本起不来**
 
 ---
 
@@ -20,7 +22,7 @@
 
 | 版本 | 状态 | 补丁文件数 | 备注 |
 | --- | --- | --- | --- |
-| **Mrite 2.6.15** | ✅ 当前补丁 | 12 | + `rules-library.js`：修复目录模式「没有模板」（模板全部随包内置，从不联网获取）；+ 4 个渲染层文件：移除「API 常识答题」门禁，模型随便选、随便填 |
+| **Mrite 2.6.15** | ✅ 当前补丁 | 14 | + `rules-library.js`：修复目录模式「没有模板」（模板全部随包内置，从不联网获取）；+ 4 个渲染层文件：移除「API 常识答题」门禁，模型随便选、随便填；+ 2 处：运行前「网络」预检不再卡死「确认运行」 |
 | Mrite 2.6.14 | 历史版本 | 7 | 见 git 提交 `24cb7f3`，含热更新防护与网络断联 |
 | Mrite 2.6.13 | 历史版本 | 4 | 见 git 提交 `2705d52`，无热更新加载器 |
 
@@ -31,7 +33,7 @@
 
 ---
 
-## 二、补丁内容（12 个文件）
+## 二、补丁内容（14 个文件）
 
 | 文件 | 类型 | 作用 |
 | --- | --- | --- |
@@ -45,6 +47,8 @@
 | `patch/renderer/features/settings/provider-form.js` | 修改 | 供应商选择不再拦截；`_ensureModelSelect()` 由只读下拉/只读输入改为**可编辑输入框 + `<datalist>` 建议**；端点框不再 `readOnly`（预填但可改） |
 | `patch/renderer/ui/settings.html` | 修改 | 删掉 `#btnApiQuiz`「答题解锁配置权限」按钮；模型名标签改为「模型名称（可自由填写）」；小白指引第 1 条改为「想接哪个模型都行」 |
 | `patch/renderer/styles/result-components.css` | 修改 | 删掉答题相关死样式（`.api-quiz-*` / `.btn-quiz-unlock` / `.provider-card.locked`） |
+| `patch/src/ipc/system.js` | 修改 | **运行前「网络」预检不再卡死「确认运行」**：该预检请求官方服务的 `/api/v1/avatars`，开发版后端是黑洞 → 必然 ECONNREFUSED → 八项检测不全过。现在检测到 `BLACKHOLE_BASE` 即直接返回 `{ok:true, skipped:true}`，不发请求 |
+| `patch/renderer/shared/run-detect.js` | 修改 | 收到 `network.skipped` 时把「网络」卡片显示为 **通过 / 已跳过**，日志说明「开发版不连接官方软件服务」 |
 | `patch/renderer/dev-unlock.js` | 新增 | 渲染层解锁：**伪造常驻登录会话** + 登录遮罩/过期弹窗置空 + `_isActivated` 恒为 true |
 | `patch/renderer/index.html` | 修改 | 在**最后一个业务脚本 `index.js` 之前**引入 `dev-unlock.js` |
 
@@ -150,6 +154,8 @@
    patch\renderer\features\settings\provider-form.js    → <ROOT>\resources\app\renderer\features\settings\provider-form.js
    patch\renderer\styles\result-components.css          → <ROOT>\resources\app\renderer\styles\result-components.css
    patch\renderer\ui\settings.html       → <ROOT>\resources\app\renderer\ui\settings.html
+   patch\src\ipc\system.js               → <ROOT>\resources\app\src\ipc\system.js
+   patch\renderer\shared\run-detect.js   → <ROOT>\resources\app\renderer\shared\run-detect.js
    patch\renderer\dev-unlock.js      →  <ROOT>\resources\app\renderer\dev-unlock.js
    patch\renderer\index.html         →  <ROOT>\resources\app\renderer\index.html
    ```

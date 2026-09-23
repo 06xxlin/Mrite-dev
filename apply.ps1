@@ -33,6 +33,10 @@ $patchFiles = @(
   'renderer\features\settings\provider-form.js',
   'renderer\styles\result-components.css',
   'renderer\ui\settings.html',
+  # ★ 运行前「网络」预检探的是官方软件服务，开发版后端被黑洞掉后必然失败，
+  #   会让「确认运行」按钮永久置灰（任务起不来）→ 这两处把它改成「已跳过」并放行。
+  'src\ipc\system.js',
+  'renderer\shared\run-detect.js',
   'renderer\dev-unlock.js',
   'renderer\index.html'
 )
